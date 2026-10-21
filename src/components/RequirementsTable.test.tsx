@@ -12,7 +12,7 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
-  useFilters.setState({ sort: { key: 'dueAt', dir: 'asc' }, selectedId: null });
+  useFilters.setState({ sort: { key: 'dueAt', dir: 'asc' }, selectedId: null, opened: null });
 });
 
 describe('RequirementsTable', () => {
@@ -35,22 +35,21 @@ describe('RequirementsTable', () => {
     expect(header).toHaveAttribute('aria-sort', 'descending');
   });
 
-  it('sélectionne la ligne active au clavier', async () => {
+  it('ouvre le détail de la ligne active avec Entrée', async () => {
     const rows = generateRequirements(50);
     render(<RequirementsTable rows={rows} />);
     screen.getByRole('grid').focus();
     await userEvent.keyboard('{ArrowDown}{ArrowDown}{Enter}');
-    expect(useFilters.getState().selectedId).toBe(rows[2]!.id);
+    expect(useFilters.getState().opened).toEqual(rows[2]);
   });
 
-  it('bascule la sélection avec Espace', async () => {
+  it('ouvre le détail au clic simple', async () => {
     const rows = generateRequirements(50);
     render(<RequirementsTable rows={rows} />);
-    screen.getByRole('grid').focus();
-    await userEvent.keyboard('{ArrowDown} ');
-    expect(useFilters.getState().selectedId).toBe(rows[1]!.id);
-    await userEvent.keyboard(' ');
-    expect(useFilters.getState().selectedId).toBeNull();
+    await waitFor(() => expect(screen.getAllByRole('row').length).toBeGreaterThan(1));
+    const row = document.getElementById(`row-${rows[1]!.id}`)!;
+    await userEvent.click(row);
+    expect(useFilters.getState().opened).toEqual(rows[1]);
   });
 
   it('affiche un état vide explicite', () => {

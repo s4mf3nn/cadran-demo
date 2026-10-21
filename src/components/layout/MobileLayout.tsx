@@ -1,10 +1,8 @@
 import { lazy, Suspense } from 'react';
-import { AiMagicIcon, ArrowDown01Icon, FilterHorizontalIcon, Search01Icon } from '@hugeicons/core-free-icons';
+import { AiMagicIcon, FilterHorizontalIcon, Search01Icon } from '@hugeicons/core-free-icons';
 import type { Aggregates, Requirement } from '@/data/types';
 import { DATASET_SIZE } from '@/hooks/useCompassData';
 import type { AssistantApi } from '@/hooks/useAssistant';
-import { focusIn } from '@/lib/focus';
-import { useFilters } from '@/store/filters';
 import { useUi } from '@/store/ui';
 import { AssistantPanel } from '../AssistantPanel';
 import { FilterPanel } from '../FilterPanel';
@@ -35,16 +33,12 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
   const leftDrawer = useUi((s) => s.leftDrawer);
   const rightDrawer = useUi((s) => s.rightDrawer);
   const setDrawer = useUi((s) => s.setDrawer);
-  const activeFilters = useFilters((s) => {
-    const f = s.filters;
-    return f.statuses.length + f.categories.length + f.countries.length + (f.minRisk > 1 ? 1 : 0) + (f.search ? 1 : 0);
-  });
 
   return (
     <div className="flex h-dvh flex-col bg-background text-foreground">
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
         <Brand />
-        <Button type="button" variant="ghost" size="icon" aria-label="Rechercher" onClick={() => focusIn('left', 'filter-search')}>
+        <Button type="button" variant="ghost" size="icon" aria-label="Rechercher" onClick={() => useUi.getState().setSearchOpen(true)}>
           <Icon icon={Search01Icon} size={20} />
         </Button>
       </header>
@@ -52,18 +46,7 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
       <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pt-4 pb-24 *:shrink-0">
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-lg font-semibold">Tableau de bord</h1>
-          <Button type="button" variant="outline" size="sm" aria-label="Vue : toutes les exigences">
-            Toutes
-            <Icon icon={ArrowDown01Icon} size={14} />
-          </Button>
-        </div>
-        <div className="flex gap-2">
-          <SortButton className="flex-1" />
-          <Button type="button" variant="outline" size="sm" className="flex-1 border-dashed shadow-none" onClick={() => setDrawer('left', true)}>
-            <Icon icon={FilterHorizontalIcon} />
-            Filtrer
-            {activeFilters > 0 && <span className="rounded-full bg-accent px-1.5 text-xs tabular-nums">{activeFilters}</span>}
-          </Button>
+          <SortButton />
         </div>
 
         {isLoading || !aggregates ? (

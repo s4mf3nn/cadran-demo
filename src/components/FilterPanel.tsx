@@ -3,6 +3,7 @@ import { RadioGroup as RadioGroupPrimitive } from 'radix-ui';
 import { ArrowDown01Icon, Cancel01Icon, Search01Icon, Tick02Icon } from '@hugeicons/core-free-icons';
 import { CATEGORIES, COUNTRIES, STATUS_LABEL, STATUSES, type Aggregates, type Risk } from '../data/types';
 import { useFilters } from '../store/filters';
+import { useUi } from '../store/ui';
 import { StatusDot } from './StatusTag';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -10,14 +11,13 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
-import { Kbd } from '@/components/ui/kbd';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
 const nf = new Intl.NumberFormat('fr-FR');
 
-/** Section repliable. `triggerId` sert de cible de focus aux raccourcis S, R, C et P. */
-function Section({ title, hint, count, triggerId, children }: { title: string; hint: string; count?: number; triggerId: string; children: ReactNode }) {
+/** Section repliable. `triggerId` sert de cible de focus aux boutons du rail latéral. */
+function Section({ title, count, triggerId, children }: { title: string; count?: number; triggerId: string; children: ReactNode }) {
   const [open, setOpen] = useState(true);
   const contentId = useId();
   return (
@@ -30,7 +30,6 @@ function Section({ title, hint, count, triggerId, children }: { title: string; h
         <Icon icon={ArrowDown01Icon} size={14} className={cn('transition-transform motion-reduce:transition-none', !open && '-rotate-90')} />
         <span className="flex-1">{title}</span>
         {count ? <span className="rounded-full bg-primary px-1.5 text-[11px] text-primary-foreground tabular-nums">{count}</span> : null}
-        <Kbd aria-hidden="true">{hint}</Kbd>
       </CollapsibleTrigger>
       <CollapsibleContent id={contentId} className="pt-1 pb-1">{children}</CollapsibleContent>
     </Collapsible>
@@ -110,29 +109,41 @@ function CountryCombobox() {
 export function FilterPanel({ aggregates }: { aggregates?: Aggregates }) {
   // Sélecteurs ciblés : le panneau ne se re-rend pas quand on sélectionne une ligne.
   const filters = useFilters((s) => s.filters);
-  const setSearch = useFilters((s) => s.setSearch);
+  const searchText = filters.search;
+  const openSearch = () => useUi.getState().setSearchOpen(true);
   const toggle = useFilters((s) => s.toggle);
   const setMinRisk = useFilters((s) => s.setMinRisk);
   const reset = useFilters((s) => s.reset);
-  const dirty = filters.search !== '' || filters.statuses.length + filters.categories.length + filters.countries.length > 0 || filters.minRisk > 1;
+  const dirty = searchText !== '' || filters.statuses.length + filters.categories.length + filters.countries.length > 0 || filters.minRisk > 1;
 
   return (
     <div className="flex flex-col">
-      <div className="relative px-3 pb-3">
-        <Icon icon={Search01Icon} className="pointer-events-none absolute top-1/2 left-5.5 -translate-y-[calc(50%+6px)] text-muted-foreground" />
+      <div className="relative px-3 pt-1 pb-3">
+        <Icon icon={Search01Icon} className="pointer-events-none absolute top-1/2 left-5.5 -translate-y-[calc(50%+4px)] text-muted-foreground" />
         <Input
           id="filter-search"
           type="search"
           aria-label="Rechercher une exigence"
-          value={filters.search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={searchText}
+          readOnly
+          onClick={openSearch}
+          onKeyDown={(e) => { if (e.key === 'Enter') openSearch(); }}
           placeholder="Référence, sujet, règlement…"
-          className="pr-8 pl-8 [&::-webkit-search-cancel-button]:hidden"
+          className={cn('cursor-pointer pl-8 [&::-webkit-search-cancel-button]:hidden', searchText && 'pr-8')}
         />
-        <Kbd aria-hidden="true" className="pointer-events-none absolute top-1/2 right-5 -translate-y-[calc(50%+6px)]">/</Kbd>
+        {searchText && (
+          <button
+            type="button"
+            aria-label="Effacer la recherche"
+            onClick={() => useFilters.getState().setSearch('')}
+            className="absolute top-1/2 right-5 flex size-5 -translate-y-[calc(50%+4px)] items-center justify-center rounded-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Icon icon={Cancel01Icon} size={12} />
+          </button>
+        )}
       </div>
 
-      <Section title="Statut" hint="S" triggerId="filter-status" count={filters.statuses.length}>
+      <Section title="Statut" triggerId="filter-status" count={filters.statuses.length}>
         <div role="group" aria-label="Statut">
           {STATUSES.map((s) => (
             <CheckRow
@@ -147,7 +158,7 @@ export function FilterPanel({ aggregates }: { aggregates?: Aggregates }) {
         </div>
       </Section>
 
-      <Section title="Risque minimum" hint="R" triggerId="filter-risk" count={filters.minRisk > 1 ? 1 : 0}>
+      <Section title="Risque minimum" triggerId="filter-risk">
         <RadioGroupPrimitive.Root
           aria-label="Risque minimum"
           value={String(filters.minRisk)}
@@ -167,7 +178,7 @@ export function FilterPanel({ aggregates }: { aggregates?: Aggregates }) {
         </RadioGroupPrimitive.Root>
       </Section>
 
-      <Section title="Catégories" hint="C" triggerId="filter-category" count={filters.categories.length}>
+      <Section title="Catégories" triggerId="filter-category" count={filters.categories.length}>
         <div role="group" aria-label="Catégories">
           {CATEGORIES.map((c) => (
             <CheckRow key={c} checked={filters.categories.includes(c)} onChange={() => toggle('categories', c)} label={c} volume={aggregates?.byCategory[c]} />
@@ -175,7 +186,7 @@ export function FilterPanel({ aggregates }: { aggregates?: Aggregates }) {
         </div>
       </Section>
 
-      <Section title="Pays" hint="P" triggerId="filter-country" count={filters.countries.length}>
+      <Section title="Pays" triggerId="filter-country" count={filters.countries.length}>
         <CountryCombobox />
       </Section>
 

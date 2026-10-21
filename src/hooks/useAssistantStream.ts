@@ -37,6 +37,15 @@ export function useAssistantStream(endpoint = '/api/assistant') {
 
   const stop = useCallback(() => controllerRef.current?.abort(), []);
 
+  const clear = useCallback(() => {
+    controllerRef.current?.abort();
+    bufferRef.current = '';
+    setText('');
+    setError(null);
+    setQuestion('');
+    setStatus('idle');
+  }, []);
+
   const ask = useCallback(
     async (payload: AskPayload) => {
       controllerRef.current?.abort();
@@ -87,5 +96,5 @@ export function useAssistantStream(endpoint = '/api/assistant') {
     [],
   );
 
-  return { status, text, error, question, ask, stop };
+  return { status, text, error, question, ask, stop, clear };
 }

@@ -2,7 +2,7 @@ import { memo, useRef, useState, type KeyboardEvent } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   Alert02Icon, ArrowDown01Icon, ArrowUp01Icon, ArrowUpDownIcon, Calendar03Icon, File01Icon, Globe02Icon,
-  GridViewIcon, InformationCircleIcon, Tick02Icon,
+  GridViewIcon, InformationCircleIcon,
 } from '@hugeicons/core-free-icons';
 import type { IconSvgElement } from '@hugeicons/react';
 import { Button } from '@/components/ui/button';
@@ -20,10 +20,10 @@ const COLUMNS: { key: SortKey; label: string; width: string; icon: IconSvgElemen
   { key: 'country', label: 'Pays', width: '11rem', icon: Globe02Icon },
   { key: 'category', label: 'Catégorie', width: '9rem', icon: GridViewIcon },
   { key: 'status', label: 'Statut', width: '8rem', icon: InformationCircleIcon },
-  { key: 'risk', label: 'Risque', width: '6rem', icon: Alert02Icon },
+  { key: 'risk', label: 'Risque', width: '7.5rem', icon: Alert02Icon },
   { key: 'dueAt', label: 'Échéance', width: '8rem', icon: Calendar03Icon },
 ];
-const GRID = `2.5rem ${COLUMNS.map((c) => c.width).join(' ')} minmax(16rem, 1fr)`;
+const GRID = `${COLUMNS.map((c) => c.width).join(' ')} minmax(16rem, 1fr)`;
 const ROW_HEIGHT = 40;
 const CELL = 'flex h-full min-w-0 items-center border-r border-border px-3 last:border-r-0';
 
@@ -42,6 +42,7 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
   const setSort = useFilters((s) => s.setSort);
   const selectedId = useFilters((s) => s.selectedId);
   const select = useFilters((s) => s.select);
+  const open = useFilters((s) => s.open);
   const nbCountries = useFilters((s) => s.filters.countries.length || COUNTRIES.length);
   const nbCategories = useFilters((s) => s.filters.categories.length || CATEGORIES.length);
 
@@ -72,8 +73,8 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
       PageUp: () => move(activeIndex - page),
       Home: () => move(0),
       End: () => move(rows.length - 1),
-      ' ': () => row && select(row.id === selectedId ? null : row.id),
-      Enter: () => row && select(row.id),
+      ' ': () => row && open(row),
+      Enter: () => row && open(row),
     };
     const action = keys[e.key];
     if (action) {
@@ -95,7 +96,6 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
         className="relative min-h-0 flex-1 overflow-auto text-sm outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
       >
         <div role="row" aria-rowindex={1} className="sticky top-0 z-10 grid min-w-max border-b border-border bg-sidebar" style={{ gridTemplateColumns: GRID, height: ROW_HEIGHT }}>
-          <div role="columnheader" aria-label="Sélection" className={CELL} />
           {COLUMNS.map((c) => {
             const isSorted = sort.key === c.key;
             return (
@@ -136,7 +136,7 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
                   role="row"
                   aria-rowindex={v.index + 2}
                   aria-selected={isSelected}
-                  onClick={() => { setActive(v.index); select(isSelected ? null : r.id); }}
+                  onClick={() => { setActive(v.index); select(r.id); open(r); }}
                   className={cn(
                     'absolute left-0 grid w-full min-w-max cursor-pointer items-center border-b border-border',
                     isSelected ? 'bg-status-conforme-bg' : 'hover:bg-accent/60',
@@ -144,11 +144,6 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
                   )}
                   style={{ gridTemplateColumns: GRID, height: ROW_HEIGHT, transform: `translateY(${v.start}px)` }}
                 >
-                  <div role="gridcell" className={cn(CELL, 'justify-center px-0')}>
-                    <span aria-hidden="true" className={cn('grid size-4 place-items-center rounded-[4px] border', isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-input-strong bg-background')}>
-                      {isSelected && <Icon icon={Tick02Icon} size={12} strokeWidth={2.2} />}
-                    </span>
-                  </div>
                   <div role="gridcell" className={cn(CELL, 'gap-2')}>
                     <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center rounded-md border border-border bg-background text-muted-foreground">
                       <Icon icon={File01Icon} size={13} />
@@ -179,7 +174,7 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
           {aggregates && ` · ${nf.format(aggregates.byStatus.non_conforme)} non conformes · ${nf.format(aggregates.atRisk)} en risque`}
         </p>
         <p className="hidden items-center gap-1.5 md:flex" aria-hidden="true">
-          <Kbd>↑</Kbd><Kbd>↓</Kbd> naviguer <Kbd>Espace</Kbd> sélectionner <Kbd>↵</Kbd> ouvrir
+          <Kbd>↑</Kbd><Kbd>↓</Kbd> naviguer <Kbd>↵</Kbd> ouvrir (ou clic)
         </p>
       </footer>
     </section>

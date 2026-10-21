@@ -13,6 +13,7 @@ export const RequirementsList = memo(function RequirementsList({ rows }: { rows:
   const parentRef = useRef<HTMLDivElement>(null);
   const selectedId = useFilters((s) => s.selectedId);
   const select = useFilters((s) => s.select);
+  const open = useFilters((s) => s.open);
   const virtualizer = useVirtualizer({ count: rows.length, getScrollElement: () => parentRef.current, estimateSize: () => ITEM_HEIGHT, overscan: 8 });
 
   return (
@@ -36,7 +37,7 @@ export const RequirementsList = memo(function RequirementsList({ rows }: { rows:
                   <button
                     type="button"
                     aria-pressed={isSelected}
-                    onClick={() => select(isSelected ? null : r.id)}
+                    onClick={() => { select(r.id); open(r); }}
                     className={cn('flex h-full w-full flex-col justify-center gap-1 px-4 text-left', isSelected && 'bg-status-conforme-bg')}
                   >
                     <span className="flex items-center justify-between gap-2">
