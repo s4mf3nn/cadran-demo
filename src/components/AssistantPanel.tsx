@@ -135,7 +135,7 @@ export function AssistantPanel({ assistant, total }: { assistant: AssistantApi; 
             className="w-full resize-none bg-transparent px-1 text-sm outline-none placeholder:text-muted-foreground"
           />
           <div className="flex items-center gap-2">
-            <span className="mr-auto flex items-center gap-1 text-xs text-muted-foreground"><Kbd aria-hidden="true">↵</Kbd> envoyer</span>
+            <span className="mr-auto flex items-center gap-1 text-xs text-muted-foreground max-md:hidden"><Kbd aria-hidden="true">↵</Kbd> envoyer</span>
             <Button type="button" variant="outline" size="sm" disabled={!busy} onClick={stop} className={cn(!busy && 'opacity-60')}>
               <Icon icon={StopIcon} />
               Stop

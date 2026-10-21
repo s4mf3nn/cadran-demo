@@ -13,6 +13,8 @@ import { ViewBar } from './components/layout/ViewBar';
 import { DATASET_SIZE, useCadranData } from './hooks/useCadranData';
 import { useAssistant, SUGGESTIONS } from './hooks/useAssistant';
 import { useHotkeys } from './hooks/useHotkeys';
+import { useIsMobile } from './hooks/useIsMobile';
+import { MobileLayout } from './components/layout/MobileLayout';
 import { exportCsv } from './lib/exportCsv';
 import { focusIn } from './lib/focus';
 import { useUi } from './store/ui';
@@ -28,6 +30,7 @@ const Charts = lazy(() => import('./components/Charts').then((m) => ({ default: 
 export default function App() {
   const { rows, aggregates, timings, isLoading, isRefreshing, error } = useCadranData();
   const ui = useUi.getState;
+  const isMobile = useIsMobile();
   const assistant = useAssistant(aggregates);
   const suggest = (i: number) => () => {
     if (assistant.status !== 'thinking' && assistant.status !== 'streaming') assistant.send(SUGGESTIONS[i]!);
@@ -52,6 +55,9 @@ export default function App() {
 
   return (
     <TooltipProvider>
+      {isMobile ? (
+        <MobileLayout rows={rows} aggregates={aggregates} isLoading={isLoading} isRefreshing={isRefreshing} assistant={assistant} />
+      ) : (
       <div className="flex h-screen bg-background text-foreground">
         <Sidebar>
           <FilterPanel aggregates={aggregates} />
@@ -95,6 +101,7 @@ export default function App() {
           <AssistantPanel assistant={assistant} total={aggregates?.total} />
         </RightPanel>
       </div>
+      )}
 
       <QuickActions onExport={() => exportCsv(rows)} />
       <ShortcutsDialog />
