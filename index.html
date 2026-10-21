@@ -3,23 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="color-scheme" content="light" />
     <title>Compass Demo</title>
-    <script>
-      // Exécuté avant le premier rendu : applique le thème sans flash.
-      // Préférence mémorisée si elle existe, sinon prefers-color-scheme. Tout est protégé par try/catch.
-      (function () {
-        var dark = false;
-        try {
-          dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        } catch (e) {}
-        try {
-          var stored = localStorage.getItem('theme');
-          if (stored === 'dark' || stored === 'light') dark = stored === 'dark';
-        } catch (e) {}
-        if (dark) document.documentElement.classList.add('dark');
-      })();
-    </script>
   </head>
   <body>
     <div id="root"></div>
