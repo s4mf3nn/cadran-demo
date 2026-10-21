@@ -1,4 +1,4 @@
-import { AiMagicIcon, Download04Icon, Settings02Icon } from '@hugeicons/core-free-icons';
+import { AiMagicIcon, Download04Icon, GithubIcon, Settings02Icon } from '@hugeicons/core-free-icons';
 import { exportCsv } from '@/lib/exportCsv';
 import { focusIn } from '@/lib/focus';
 import { useFilters } from '@/store/filters';
@@ -46,6 +46,13 @@ export function AppHeader({ rows, timings, isRefreshing }: { rows: Requirement[]
             <DropdownMenuItem onSelect={() => exportCsv(rows)}>CSV · {rows.length.toLocaleString('fr-FR')} exigences filtrées</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <Button type="button" variant="outline" size="sm" asChild>
+          <a href="https://github.com/s4mf3nn/cadran-demo" target="_blank" rel="noopener noreferrer">
+            <Icon icon={GithubIcon} />
+            GitHub
+            <span className="sr-only"> (s'ouvre dans un nouvel onglet)</span>
+          </a>
+        </Button>
         {!rightOpen && (
           <Button
             type="button"

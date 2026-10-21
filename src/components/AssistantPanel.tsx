@@ -180,7 +180,7 @@ export function AssistantPanel({ assistant, total }: { assistant: AssistantApi; 
       </div>
 
       <div className={cn('mt-auto flex flex-col gap-3 px-4', status !== 'idle' && 'border-t border-border pt-3')}>
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1.5 max-md:hidden">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-medium text-muted-foreground">Suggestions</h3>
             <Button type="button" variant="ghost" size="xs" aria-expanded={showSuggestions} aria-controls="assistant-suggestions" onClick={toggleSuggestions}>
