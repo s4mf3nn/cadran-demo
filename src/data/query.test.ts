@@ -24,6 +24,15 @@ describe('runQuery', () => {
     expect(sumCountries).toBe(aggregates.atRisk);
   });
 
+  it('ventile les échéances par statut et les volumes par catégorie', () => {
+    const { aggregates } = runQuery(data, noFilter, byRef, NOW);
+    aggregates.deadlines.forEach((d, m) => {
+      const sum = Object.values(aggregates.deadlinesByStatus[m]!).reduce((a, b) => a + b, 0);
+      expect(sum).toBe(d.count);
+    });
+    expect(Object.values(aggregates.byCategory).reduce((a, b) => a + b, 0)).toBe(data.length);
+  });
+
   it('combine les filtres pays, statut et risque', () => {
     const f: Filters = { ...noFilter, countries: ['France'], statuses: ['non_conforme'], minRisk: 3 };
     const { indices } = runQuery(data, f, byRef, NOW);

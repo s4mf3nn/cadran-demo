@@ -49,11 +49,6 @@ export function SidebarBody({ children }: { children: ReactNode }) {
           <span className="flex-1 text-left">Actions rapides</span>
           <Kbd>⌘K</Kbd>
         </Button>
-        <Button type="button" variant="outline" className="h-9 w-full justify-start gap-2 px-2.5 text-muted-foreground" onClick={() => focusIn('left', 'filter-search')}>
-          <Icon icon={Search01Icon} />
-          <span className="flex-1 text-left">Rechercher</span>
-          <Kbd>/</Kbd>
-        </Button>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
       <div className="border-t border-border p-3">
