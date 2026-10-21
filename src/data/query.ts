@@ -1,6 +1,6 @@
 import {
   CATEGORIES, COUNTRIES, STATUSES,
-  type Aggregates, type Filters, type Requirement, type Sort, type Status,
+  type Aggregates, type Category, type Filters, type Requirement, type Sort, type Status,
 } from './types';
 
 /**
@@ -51,6 +51,9 @@ export function runQuery(data: Requirement[], filters: Filters, sort: Sort, now 
   const start = new Date(now);
   const monthStart = Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1);
   const deadlines = new Uint32Array(12);
+  const deadlinesByStatus = new Uint32Array(12 * STATUSES.length);
+  const statusIdx = new Map(STATUSES.map((s, i) => [s, i]));
+  const byCategory = Object.fromEntries(CATEGORIES.map((c) => [c, 0])) as Record<Category, number>;
   let atRisk = 0;
 
   // Une seule passe sur le dataset pour le filtre et toutes les agrégations.
@@ -58,6 +61,7 @@ export function runQuery(data: Requirement[], filters: Filters, sort: Sort, now 
     if (!matches(r, filters, needle)) continue;
     kept.push(r);
     byStatus[r.status]++;
+    byCategory[r.category]++;
     if (isAtRisk(r)) {
       atRisk++;
       const ci = countryIdx.get(r.country)!;
@@ -66,7 +70,10 @@ export function runQuery(data: Requirement[], filters: Filters, sort: Sort, now 
     }
     const d = new Date(r.dueAt);
     const m = (d.getUTCFullYear() - start.getUTCFullYear()) * 12 + d.getUTCMonth() - start.getUTCMonth();
-    if (r.dueAt >= monthStart && m >= 0 && m < 12) deadlines[m]!++;
+    if (r.dueAt >= monthStart && m >= 0 && m < 12) {
+      deadlines[m]!++;
+      deadlinesByStatus[m * STATUSES.length + statusIdx.get(r.status)!]!++;
+    }
   }
 
   kept.sort((a, b) => compare(a, b, sort));
@@ -83,6 +90,10 @@ export function runQuery(data: Requirement[], filters: Filters, sort: Sort, now 
         .sort((a, b) => b.count - a.count),
       heatmap: COUNTRIES.flatMap((country, ci) =>
         CATEGORIES.map((category, ki) => ({ country, category, count: heat[ci * CATEGORIES.length + ki]! })),
+      ),
+      byCategory,
+      deadlinesByStatus: Array.from({ length: 12 }, (_, m) =>
+        Object.fromEntries(STATUSES.map((s, i) => [s, deadlinesByStatus[m * STATUSES.length + i]!])) as Record<Status, number>,
       ),
       deadlines: Array.from(deadlines, (count, i) => ({
         month: new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + i, 1))

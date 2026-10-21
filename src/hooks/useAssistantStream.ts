@@ -10,10 +10,17 @@ export type StreamStatus = 'idle' | 'thinking' | 'streaming' | 'done' | 'aborted
  * - rendu regroupé par frame : on accumule les tokens dans une ref et on ne
  *   déclenche qu'un setState par requestAnimationFrame, au lieu d'un par token.
  */
+export interface AskPayload {
+  question: string;
+  context?: unknown;
+}
+
 export function useAssistantStream(endpoint = '/api/assistant') {
   const [status, setStatus] = useState<StreamStatus>('idle');
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
+  // Dernière question posée : affichée dans la conversation et rejouée par « Réessayer ».
+  const [question, setQuestion] = useState('');
 
   const controllerRef = useRef<AbortController | null>(null);
   const bufferRef = useRef('');
@@ -30,14 +37,24 @@ export function useAssistantStream(endpoint = '/api/assistant') {
 
   const stop = useCallback(() => controllerRef.current?.abort(), []);
 
+  const clear = useCallback(() => {
+    controllerRef.current?.abort();
+    bufferRef.current = '';
+    setText('');
+    setError(null);
+    setQuestion('');
+    setStatus('idle');
+  }, []);
+
   const ask = useCallback(
-    async (payload: unknown) => {
+    async (payload: AskPayload) => {
       controllerRef.current?.abort();
       const controller = new AbortController();
       controllerRef.current = controller;
       bufferRef.current = '';
       setText('');
       setError(null);
+      setQuestion(payload.question);
       setStatus('thinking');
 
       try {
@@ -79,5 +96,5 @@ export function useAssistantStream(endpoint = '/api/assistant') {
     [],
   );
 
-  return { status, text, error, ask, stop };
+  return { status, text, error, question, ask, stop, clear };
 }

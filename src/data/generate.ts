@@ -1,4 +1,7 @@
-import { CATEGORIES, COUNTRIES, STATUSES, type Requirement, type Risk } from './types';
+import {
+  CATEGORIES, CATEGORY_WEIGHT, COUNTRIES, COUNTRY_HOTSPOTS, COUNTRY_PROFILE, STATUSES,
+  type Country, type Requirement, type Risk,
+} from './types';
 
 /** PRNG déterministe : même seed, même dataset, donc des tests et des démos reproductibles. */
 export function mulberry32(seed: number) {
@@ -29,20 +32,53 @@ export function generateRequirements(size: number, seed = 42, now = Date.UTC(202
   const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(rand() * arr.length)] as T;
   const out: Requirement[] = new Array(size);
 
+  // Tirage pondéré des pays (table cumulative) : quelques pays concentrent le volume.
+  const cumulative: number[] = [];
+  let totalWeight = 0;
+  for (const c of COUNTRIES) {
+    totalWeight += COUNTRY_PROFILE[c].weight;
+    cumulative.push(totalWeight);
+  }
+  const pickCountry = (): Country => {
+    const x = rand() * totalWeight;
+    const idx = cumulative.findIndex((w) => x < w);
+    return COUNTRIES[idx === -1 ? COUNTRIES.length - 1 : idx] as Country;
+  };
+
+  // Catégorie pondérée par pays (poids global × point chaud), table cumulative par pays.
+  const catTables = new Map<Country, number[]>();
+  for (const c of COUNTRIES) {
+    let acc = 0;
+    catTables.set(c, CATEGORIES.map((cat) => (acc += CATEGORY_WEIGHT[cat] * (COUNTRY_HOTSPOTS[c]?.[cat] ?? 1))));
+  }
+  const pickCategory = (country: Country) => {
+    const table = catTables.get(country)!;
+    const x = rand() * table[table.length - 1]!;
+    return CATEGORIES[table.findIndex((w) => x < w)] as (typeof CATEGORIES)[number];
+  };
+
   for (let i = 0; i < size; i++) {
-    // Distribution volontairement asymétrique : la majorité est conforme.
+    const country = pickCountry();
+    const bias = COUNTRY_PROFILE[country].riskBias;
+    // Majorité conforme, mais la part de non-conformes (2 % à 22 %) dépend du pays.
     const r = rand();
-    const status = r < 0.55 ? STATUSES[0] : r < 0.75 ? STATUSES[1] : r < 0.9 ? STATUSES[2] : STATUSES[3];
+    const conforme = 0.55 - 0.25 * bias;
+    const nonConforme = 0.12 + 0.1 * bias;
+    const status =
+      r < conforme ? STATUSES[0]
+      : r < conforme + 0.15 ? STATUSES[1]
+      : r < 1 - nonConforme ? STATUSES[2]
+      : STATUSES[3];
     const regulation = pick(REGULATIONS);
     out[i] = {
       id: i,
       ref: `REQ-${String(i + 1).padStart(6, '0')}`,
       title: `${pick(SUBJECTS)} (${regulation})`,
       regulation,
-      country: pick(COUNTRIES),
-      category: pick(CATEGORIES),
+      country,
+      category: pickCategory(country),
       status,
-      risk: (1 + Math.floor(rand() * 4)) as Risk,
+      risk: (1 + Math.floor(Math.min(0.999, Math.max(0, rand() + 0.3 * bias)) * 4)) as Risk,
       dueAt: now + Math.floor(rand() * 400 - 30) * DAY,
     };
   }
