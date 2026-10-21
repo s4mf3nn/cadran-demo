@@ -11,6 +11,7 @@ import { RightPanel } from './components/layout/RightPanel';
 import { Sidebar } from './components/layout/Sidebar';
 import { ViewBar } from './components/layout/ViewBar';
 import { DATASET_SIZE, useCompassData } from './hooks/useCompassData';
+import { useAssistant, SUGGESTIONS } from './hooks/useAssistant';
 import { useHotkeys } from './hooks/useHotkeys';
 import { exportCsv } from './lib/exportCsv';
 import { focusIn } from './lib/focus';
@@ -27,6 +28,10 @@ const Charts = lazy(() => import('./components/Charts').then((m) => ({ default: 
 export default function App() {
   const { rows, aggregates, timings, isLoading, isRefreshing, error } = useCompassData();
   const ui = useUi.getState;
+  const assistant = useAssistant(aggregates);
+  const suggest = (i: number) => () => {
+    if (assistant.status !== 'thinking' && assistant.status !== 'streaming') assistant.send(SUGGESTIONS[i]!);
+  };
 
   useHotkeys({
     quickActions: () => ui().setQuickOpen(true),
@@ -39,6 +44,10 @@ export default function App() {
     focusRisk: () => focusIn('left', 'filter-risk'),
     focusCategory: () => focusIn('left', 'filter-category'),
     focusCountry: () => focusIn('left', 'filter-country'),
+    suggestion1: suggest(0),
+    suggestion2: suggest(1),
+    suggestion3: suggest(2),
+    escape: () => assistant.stop(),
   });
 
   return (
@@ -83,9 +92,7 @@ export default function App() {
         </div>
 
         <RightPanel>
-          <div className="min-h-0 flex-1 overflow-y-auto p-3">
-            <AssistantPanel aggregates={aggregates} />
-          </div>
+          <AssistantPanel assistant={assistant} total={aggregates?.total} />
         </RightPanel>
       </div>
 

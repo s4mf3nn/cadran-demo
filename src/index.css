@@ -11,8 +11,20 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+  .caret {
+    animation: none !important;
+  }
+}
+
+/* Curseur de streaming : bleu, clignotant (figé si l'utilisateur demande moins d'animations). */
+@keyframes caret-blink {
+  50% { opacity: 0; }
+}
+.caret {
+  animation: caret-blink 1s steps(1) infinite;
 }
 
 @theme inline {
