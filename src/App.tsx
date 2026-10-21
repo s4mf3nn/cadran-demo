@@ -4,18 +4,17 @@ import { RequirementsTable } from './components/RequirementsTable';
 import { AssistantPanel } from './components/AssistantPanel';
 import { Kpi } from './components/Kpi';
 import { StatusBar } from './components/StatusBar';
-import { QuickActions } from './components/QuickActions';
+import { RequirementDetail } from './components/RequirementDetail';
+import { SearchDialog } from './components/SearchDialog';
 import { ShortcutsDialog } from './components/ShortcutsDialog';
 import { AppHeader } from './components/layout/AppHeader';
 import { RightPanel } from './components/layout/RightPanel';
 import { Sidebar } from './components/layout/Sidebar';
-import { ViewBar } from './components/layout/ViewBar';
 import { DATASET_SIZE, useCadranData } from './hooks/useCadranData';
 import { useAssistant, SUGGESTIONS } from './hooks/useAssistant';
 import { useHotkeys } from './hooks/useHotkeys';
 import { useIsMobile } from './hooks/useIsMobile';
 import { MobileLayout } from './components/layout/MobileLayout';
-import { exportCsv } from './lib/exportCsv';
 import { focusIn } from './lib/focus';
 import { useUi } from './store/ui';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -33,20 +32,17 @@ export default function App() {
   const isMobile = useIsMobile();
   const assistant = useAssistant(aggregates);
   const suggest = (i: number) => () => {
-    if (assistant.status !== 'thinking' && assistant.status !== 'streaming') assistant.send(SUGGESTIONS[i]!);
+    if (assistant.status === 'thinking' || assistant.status === 'streaming') return;
+    // L'assistant flottant est fermé par défaut : on l'ouvre pour que la réponse soit visible.
+    focusIn('right', 'assistant-input');
+    assistant.send(SUGGESTIONS[i]!);
   };
 
   useHotkeys({
-    quickActions: () => ui().setQuickOpen(true),
-    search: () => focusIn('left', 'filter-search'),
+    search: () => ui().setSearchOpen(true),
     help: () => ui().setHelpOpen(true),
     toggleLeft: () => ui().togglePanel('left'),
-    toggleRight: () => ui().togglePanel('right'),
     focusAssistant: () => focusIn('right', 'assistant-input'),
-    focusStatus: () => focusIn('left', 'filter-status'),
-    focusRisk: () => focusIn('left', 'filter-risk'),
-    focusCategory: () => focusIn('left', 'filter-category'),
-    focusCountry: () => focusIn('left', 'filter-country'),
     suggestion1: suggest(0),
     suggestion2: suggest(1),
     suggestion3: suggest(2),
@@ -64,10 +60,9 @@ export default function App() {
         </Sidebar>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <AppHeader rows={rows} />
-          <ViewBar timings={timings} isRefreshing={isRefreshing} />
+          <AppHeader rows={rows} timings={timings} isRefreshing={isRefreshing} />
 
-          <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 pb-6 *:shrink-0">
+          <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-6 *:shrink-0">
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>Erreur : {String(error)}</AlertDescription>
@@ -89,7 +84,7 @@ export default function App() {
                 <Suspense fallback={<Skeleton className="h-[340px] rounded-xl" aria-busy="true" />}>
                   <Charts aggregates={aggregates} />
                 </Suspense>
-                <div className="h-[36rem] shrink-0">
+                <div className="h-[80vh] shrink-0">
                   <RequirementsTable rows={rows} aggregates={aggregates} />
                 </div>
               </>
@@ -103,7 +98,8 @@ export default function App() {
       </div>
       )}
 
-      <QuickActions onExport={() => exportCsv(rows)} />
+      <RequirementDetail assistant={assistant} isMobile={isMobile} />
+      <SearchDialog rows={rows} total={aggregates?.total} />
       <ShortcutsDialog />
     </TooltipProvider>
   );

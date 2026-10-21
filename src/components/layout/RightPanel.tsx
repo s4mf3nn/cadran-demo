@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { AiMagicIcon, SidebarRightIcon } from '@hugeicons/core-free-icons';
+import { AiMagicIcon, Cancel01Icon } from '@hugeicons/core-free-icons';
 import { useUi } from '@/store/ui';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -20,33 +20,40 @@ export function AssistantHeader({ actions, ...props }: { actions?: ReactNode } &
   );
 }
 
-/** Panneau de droite : 380 px, ou rail de 52 px. Le contenu reste monté pour ne pas perdre la réponse en cours. */
+/**
+ * Assistant flottant en bas à droite : il se superpose au tableau de bord sans le redimensionner.
+ * Le contenu reste monté (masqué) pour ne pas perdre la réponse en cours.
+ */
 export function RightPanel({ children }: { children: ReactNode }) {
   const open = useUi((s) => s.rightOpen);
   const toggle = useUi((s) => s.togglePanel);
-  const label = open ? "Réduire l'assistant" : "Ouvrir l'assistant";
+  const label = "Fermer l'assistant";
 
   return (
     <aside
       id={RIGHT_PANEL_ID}
       aria-label="Assistant"
-      className={cn(
-        'hidden shrink-0 flex-col border-l border-border bg-background transition-[width] duration-200 motion-reduce:transition-none md:flex',
-        open ? 'w-[380px]' : 'w-[52px] items-center',
-      )}
+      className="pointer-events-none fixed inset-y-4 right-4 z-40 hidden flex-col items-end gap-3 md:flex"
     >
-      <div className={cn('flex h-[52px] shrink-0 items-center', open ? 'justify-between px-3' : 'justify-center')}>
-        {open && <AssistantHeader role="heading" aria-level={2} />}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button type="button" variant="ghost" size="icon" aria-label={label} aria-expanded={open} aria-controls={RIGHT_PANEL_ID} onClick={() => toggle('right')}>
-              <Icon icon={open ? SidebarRightIcon : AiMagicIcon} size={18} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="left">{label} ]</TooltipContent>
-        </Tooltip>
+      <div
+        className={cn(
+          'pointer-events-auto h-full w-[400px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-border bg-background shadow-xl',
+          open ? 'flex' : 'hidden',
+        )}
+      >
+        <div className="flex h-[52px] shrink-0 items-center justify-between border-b border-border px-3">
+          <AssistantHeader role="heading" aria-level={2} />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button type="button" variant="ghost" size="icon" aria-label={label} aria-expanded={open} aria-controls={RIGHT_PANEL_ID} onClick={() => toggle('right')}>
+                <Icon icon={Cancel01Icon} size={18} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">{label}</TooltipContent>
+          </Tooltip>
+        </div>
+        <div className="flex min-h-0 flex-1 flex-col">{children}</div>
       </div>
-      <div className={cn('min-h-0 flex-1 flex-col', open ? 'flex' : 'hidden')}>{children}</div>
     </aside>
   );
 }

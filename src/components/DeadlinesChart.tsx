@@ -16,8 +16,11 @@ export function DeadlinesChart({ aggregates, compact = false }: { aggregates: Ag
   const option = useMemo(() => {
     const months = deadlines.map((d) => d.month);
     const maxTotal = Math.max(...deadlines.map((d) => d.count), 0);
-    // Axe gradué par pas de 4 000 (0, 4k, 8k, 12k), étendu si un mois dépasse 12 000.
-    const yMax = Math.max(12_000, Math.ceil(maxTotal / 4000) * 4000);
+    // Axe réévalué à chaque mise à jour des données : pas « rond » (1, 2, 2,5, 5 × 10ⁿ) pour ~3 graduations.
+    const rough = Math.max(maxTotal, 1) / 3;
+    const mag = 10 ** Math.floor(Math.log10(rough));
+    const step = ([1, 2, 2.5, 5, 10].find((m) => m * mag >= rough) ?? 10) * mag;
+    const yMax = Math.max(Math.ceil(maxTotal / step), 1) * step;
     // Les coins arrondis vont sur le segment le plus haut de chaque barre (le dernier non vide en partant du bas).
     const topOf = deadlinesByStatus.map((m) => [...STACK_ORDER].reverse().find((s) => m[s] > 0));
 
@@ -60,10 +63,10 @@ export function DeadlinesChart({ aggregates, compact = false }: { aggregates: Ag
         type: 'value',
         min: 0,
         max: yMax,
-        interval: 4000,
+        interval: step,
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { color: t.mutedForeground, fontSize: 11, formatter: (v: number) => (v === 0 ? '0' : `${v / 1000}k`) },
+        axisLabel: { color: t.mutedForeground, fontSize: 11, formatter: (v: number) => (v === 0 ? '0' : v >= 1000 ? `${nf.format(v / 1000)}k` : nf.format(v)) },
         splitLine: { lineStyle: { color: t.input, type: 'dashed' } },
       },
       series: STACK_ORDER.map((s) => ({

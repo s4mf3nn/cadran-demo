@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react';
 import {
-  Alert02Icon, CommandIcon, GridViewIcon, Globe02Icon, KeyboardIcon, Search01Icon, Shield01Icon, SidebarLeftIcon,
+  Alert02Icon, GridViewIcon, Globe02Icon, KeyboardIcon, PieChart02Icon, Search01Icon, SidebarLeftIcon,
 } from '@hugeicons/core-free-icons';
 import type { IconSvgElement } from '@hugeicons/react';
 import { focusIn } from '@/lib/focus';
@@ -30,7 +30,7 @@ export function Brand() {
   return (
     <div className="flex items-center gap-2">
       <span aria-hidden="true" className="grid size-[26px] shrink-0 place-items-center rounded-md bg-foreground text-background">
-        <Icon icon={Shield01Icon} size={15} />
+        <Icon icon={PieChart02Icon} size={16} strokeWidth={1.75} />
       </span>
       <span className="text-sm font-semibold">Cadran</span>
     </div>
@@ -39,17 +39,9 @@ export function Brand() {
 
 /** Contenu du panneau de filtres, partagé entre la sidebar desktop et le tiroir mobile. */
 export function SidebarBody({ children }: { children: ReactNode }) {
-  const setQuickOpen = useUi((s) => s.setQuickOpen);
   const setHelpOpen = useUi((s) => s.setHelpOpen);
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex flex-col gap-2 px-3 pb-3">
-        <Button type="button" variant="outline" className="h-9 w-full justify-start gap-2 px-2.5" onClick={() => setQuickOpen(true)}>
-          <Icon icon={CommandIcon} />
-          <span className="flex-1 text-left">Actions rapides</span>
-          <Kbd>⌘K</Kbd>
-        </Button>
-      </div>
       <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
       <div className="border-t border-border p-3">
         <Button type="button" variant="ghost" className="h-9 w-full justify-start gap-2 px-2.5 text-muted-foreground" onClick={() => setHelpOpen(true)}>
@@ -66,7 +58,6 @@ export function SidebarBody({ children }: { children: ReactNode }) {
 export function Sidebar({ children }: { children: ReactNode }) {
   const open = useUi((s) => s.leftOpen);
   const toggle = useUi((s) => s.togglePanel);
-  const setQuickOpen = useUi((s) => s.setQuickOpen);
   const setHelpOpen = useUi((s) => s.setHelpOpen);
   const label = open ? 'Réduire le panneau de filtres' : 'Ouvrir le panneau de filtres';
 
@@ -87,7 +78,7 @@ export function Sidebar({ children }: { children: ReactNode }) {
               <Icon icon={SidebarLeftIcon} size={18} />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right">{label} [</TooltipContent>
+          <TooltipContent side="right">{label} (</TooltipContent>
         </Tooltip>
       </div>
 
@@ -95,8 +86,7 @@ export function Sidebar({ children }: { children: ReactNode }) {
         <SidebarBody>{children}</SidebarBody>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col items-center gap-1 py-2">
-          <RailButton icon={CommandIcon} label="Actions rapides" onClick={() => setQuickOpen(true)} />
-          <RailButton icon={Search01Icon} label="Rechercher" onClick={() => focusIn('left', 'filter-search')} />
+          <RailButton icon={Search01Icon} label="Rechercher" onClick={() => useUi.getState().setSearchOpen(true)} />
           <span aria-hidden="true" className="my-1 h-px w-6 bg-border" />
           <RailButton icon={Alert02Icon} label="Filtres : statut et risque" onClick={() => focusIn('left', 'filter-status')} />
           <RailButton icon={GridViewIcon} label="Filtres : catégories" onClick={() => focusIn('left', 'filter-category')} />

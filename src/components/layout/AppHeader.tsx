@@ -9,15 +9,19 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Icon } from '@/components/ui/icon';
 import { Kbd } from '@/components/ui/kbd';
 import { RIGHT_PANEL_ID } from './RightPanel';
+import { TimingsText, type Timings } from './ViewBar';
 
-export function AppHeader({ rows }: { rows: Requirement[] }) {
+export function AppHeader({ rows, timings, isRefreshing }: { rows: Requirement[]; timings: Timings; isRefreshing: boolean }) {
   const rightOpen = useUi((s) => s.rightOpen);
   const setPanel = useUi((s) => s.setPanel);
   const reset = useFilters((s) => s.reset);
 
   return (
     <header className="flex h-[52px] shrink-0 items-center justify-between gap-3 border-b border-border px-6">
-      <h1 className="text-sm font-semibold">Tableau de bord</h1>
+      <div className="flex min-w-0 items-baseline gap-3">
+        <h1 className="shrink-0 text-sm font-semibold">Tableau de bord</h1>
+        <TimingsText timings={timings} isRefreshing={isRefreshing} />
+      </div>
       <div className="flex items-center gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

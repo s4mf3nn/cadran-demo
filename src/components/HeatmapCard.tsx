@@ -105,12 +105,6 @@ export function HeatmapCard({ aggregates }: { aggregates: Aggregates }) {
             })}
           </div>
         </div>
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-          <span>{nf.format(min)}</span>
-          <span aria-hidden="true" className="h-1.5 w-28 rounded-full" style={{ background: `linear-gradient(to right, ${t.heat[0]}, ${t.heat[1]})` }} />
-          <span>{nf.format(max)}</span>
-          <span className="ml-auto">Clic : filtrer le pays</span>
-        </div>
       </CardContent>
     </Card>
   );

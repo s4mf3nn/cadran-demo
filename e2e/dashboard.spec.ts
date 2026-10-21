@@ -2,6 +2,8 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
+  // L'assistant flottant est fermé par défaut : on l'ouvre pour les scénarios qui l'utilisent.
+  await page.addInitScript(() => localStorage.setItem('cadran.panel.right', 'open'));
   await page.goto('/');
   await expect(page.getByRole('grid', { name: 'Exigences réglementaires' })).toBeVisible({ timeout: 15_000 });
 });
@@ -35,14 +37,11 @@ test("l'assistant peut être interrompu", async ({ page }) => {
   await expect(page.getByText('Génération interrompue.', { exact: true }).last()).toBeVisible();
 });
 
-test('[ et ] réduisent les panneaux, et leur état survit à un rechargement', async ({ page }) => {
+test('( réduit le panneau de filtres, et son état survit à un rechargement', async ({ page }) => {
   const left = page.getByRole('button', { name: /panneau de filtres/ });
-  const right = page.getByRole('button', { name: /l'assistant/ }).first();
   await expect(left).toHaveAttribute('aria-expanded', 'true');
-  await page.keyboard.press('[');
-  await page.keyboard.press(']');
+  await page.keyboard.press('(');
   await expect(left).toHaveAttribute('aria-expanded', 'false');
-  await expect(right).toHaveAttribute('aria-expanded', 'false');
   await page.reload();
   await expect(page.getByRole('grid', { name: 'Exigences réglementaires' })).toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole('button', { name: /panneau de filtres/ })).toHaveAttribute('aria-expanded', 'false');
@@ -55,27 +54,23 @@ test('? ouvre l’aide qui liste les raccourcis', async ({ page }) => {
   await page.keyboard.press('?');
   const dialog = page.getByRole('dialog', { name: 'Raccourcis clavier' });
   await expect(dialog).toBeVisible();
-  for (const label of ['Actions rapides', 'Rechercher', 'Filtre Statut', 'Lancer la suggestion 3', 'Sélectionner la ligne']) {
+  for (const label of ['Rechercher', 'Lancer la suggestion 3', 'Ouvrir la ligne']) {
     await expect(dialog.getByText(label)).toBeVisible();
   }
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
 });
 
-test('S, R, C, P et / donnent le focus aux filtres ; les touches simples sont ignorées dans un champ', async ({ page }) => {
-  await page.keyboard.press('s');
-  await expect(page.locator('#filter-status')).toBeFocused();
-  await page.keyboard.press('r');
-  await expect(page.locator('#filter-risk')).toBeFocused();
-  await page.keyboard.press('c');
-  await expect(page.locator('#filter-category')).toBeFocused();
-  await page.keyboard.press('p');
-  await expect(page.locator('#filter-country')).toBeFocused();
+test('/ ouvre la modale de recherche ; les touches simples sont ignorées dans un champ', async ({ page }) => {
   await page.keyboard.press('/');
-  await expect(page.locator('#filter-search')).toBeFocused();
+  const dialog = page.getByRole('dialog', { name: 'Rechercher une exigence' });
+  const input = dialog.getByRole('combobox');
+  await expect(input).toBeFocused();
   await page.keyboard.type('s?');
-  await expect(page.locator('#filter-search')).toHaveValue('s?');
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(input).toHaveValue('s?');
+  await expect(page.getByRole('dialog')).toHaveCount(1);
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
 });
 
 test('⌘J met le focus sur la question, 1 lance une suggestion, Échap l’arrête', async ({ page }) => {
@@ -86,13 +81,6 @@ test('⌘J met le focus sur la question, 1 lance une suggestion, Échap l’arr�
   await expect(page.getByRole('button', { name: /Stop/ })).toBeEnabled();
   await page.keyboard.press('Escape');
   await expect(page.getByText('Génération interrompue.', { exact: true }).last()).toBeVisible();
-});
-
-test('Espace sélectionne la ligne active de la table', async ({ page }) => {
-  await page.getByRole('grid').focus();
-  await page.keyboard.press('ArrowDown');
-  await page.keyboard.press(' ');
-  await expect(page.getByRole('row', { selected: true })).toHaveCount(1);
 });
 
 test('clic sur la barre d’un pays : filtre pressé (aria-pressed)', async ({ page }) => {

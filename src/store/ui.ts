@@ -4,12 +4,14 @@ type Side = 'left' | 'right';
 
 const key = (side: Side) => `cadran.panel.${side}`;
 
-/** Lecture protégée : stockage indisponible (navigation privée, données bloquées) => panneau ouvert. */
+/** Lecture protégée. Filtres ouverts par défaut ; assistant flottant fermé par défaut (il recouvre le tableau de bord). */
 function readOpen(side: Side): boolean {
+  const fallback = side === 'left';
   try {
-    return localStorage.getItem(key(side)) !== 'closed';
+    const v = localStorage.getItem(key(side));
+    return v === null ? fallback : v === 'open';
   } catch {
-    return true;
+    return fallback;
   }
 }
 
@@ -25,14 +27,14 @@ interface UiState {
   leftOpen: boolean;
   rightOpen: boolean;
   helpOpen: boolean;
-  quickOpen: boolean;
+  searchOpen: boolean;
   /** Mobile : les panneaux deviennent des tiroirs, fermés par défaut et sans persistance. */
   leftDrawer: boolean;
   rightDrawer: boolean;
   setPanel: (side: Side, open: boolean) => void;
   togglePanel: (side: Side) => void;
   setHelpOpen: (open: boolean) => void;
-  setQuickOpen: (open: boolean) => void;
+  setSearchOpen: (open: boolean) => void;
   setDrawer: (side: Side, open: boolean) => void;
 }
 
@@ -40,7 +42,7 @@ export const useUi = create<UiState>((set, get) => ({
   leftOpen: readOpen('left'),
   rightOpen: readOpen('right'),
   helpOpen: false,
-  quickOpen: false,
+  searchOpen: false,
   leftDrawer: false,
   rightDrawer: false,
   setPanel: (side, open) => {
@@ -49,6 +51,6 @@ export const useUi = create<UiState>((set, get) => ({
   },
   togglePanel: (side) => get().setPanel(side, !(side === 'left' ? get().leftOpen : get().rightOpen)),
   setHelpOpen: (helpOpen) => set({ helpOpen }),
-  setQuickOpen: (quickOpen) => set({ quickOpen }),
+  setSearchOpen: (searchOpen) => set({ searchOpen }),
   setDrawer: (side, open) => set(side === 'left' ? { leftDrawer: open } : { rightDrawer: open }),
 }));
