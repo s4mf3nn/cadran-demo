@@ -68,9 +68,9 @@ Les choix structurants :
 
 ## Visualisation de données
 
-- Quatre graphiques ECharts (donut, barres, carte de chaleur, courbe) en **rendu canvas** : aucun nœud DOM par point.
+- Deux graphiques ECharts (histogramme des échéances, carte de chaleur pays × catégorie) en **rendu canvas** : aucun nœud DOM par point.
 - **Import modulaire** d'ECharts et **chargement différé** du bloc graphique (`React.lazy`) : le bundle initial reste à environ 440 ko (141 ko gzip), ECharts (608 ko) étant chargé à part.
-- **Filtrage croisé** : un clic sur un pays dans le graphique en barres filtre toute l'application.
+- **Filtrage croisé** : un clic sur le total d'un pays dans la carte de chaleur filtre toute l'application.
 - **Thème lu depuis les tokens CSS.** ECharts dessine dans un canvas et ne comprend ni `var(--x)` ni `color-mix()`. `useChartTheme` lit les tokens avec `getComputedStyle` et les convertit en `rgb()`, de sorte que les graphiques suivent le design system sans couleur dupliquée.
 - La carte de chaleur expose un résumé textuel de ses cellules les plus exposées, et ses totaux par pays sont des boutons `aria-pressed` qui filtrent sur le pays.
 
