@@ -2,7 +2,10 @@
 
 Dashboard de pilotage de la conformité réglementaire, construit comme démo technique pour une mission Senior Frontend React. Le domaine est inspiré d'un projet réel de conformité (exigences réglementaires par pays et par catégorie de produit), avec des données entièrement fictives et générées.
 
-![Capture](docs-screenshot.png)
+| Clair | Sombre |
+| --- | --- |
+| ![Desktop clair](docs/desktop-light.png) | ![Desktop sombre](docs/desktop-dark.png) |
+| ![Mobile clair](docs/mobile-light.png) | ![Mobile sombre](docs/mobile-dark.png) |
 
 ## Lancer le projet
 
@@ -16,7 +19,7 @@ npm run build        # typecheck + build de production
 
 ## Stack
 
-React 19, TypeScript strict, Vite, Zustand, TanStack Query, TanStack Virtual, Apache ECharts, Tailwind CSS v4, Vitest, React Testing Library, Playwright, GitHub Actions.
+React 19, TypeScript strict, Vite, Zustand, TanStack Query, TanStack Virtual, Apache ECharts, Tailwind CSS v4, shadcn/ui (Radix UI, lucide-react, police Inter via @fontsource-variable), Vitest, React Testing Library, Playwright, GitHub Actions.
 
 ## Ce que la démo montre, point par point face à la fiche de mission
 
@@ -31,7 +34,7 @@ React 19, TypeScript strict, Vite, Zustand, TanStack Query, TanStack Virtual, Ap
 ### Dataviz
 
 - Quatre graphiques ECharts (donut, barres, carte de chaleur, courbe) en **rendu canvas** : aucun nœud DOM par point.
-- **Import modulaire** d'ECharts et **chargement différé** du bloc graphique (`React.lazy`) : le bundle initial passe d'environ 890 ko à 300 ko.
+- **Import modulaire** d'ECharts et **chargement différé** du bloc graphique (`React.lazy`) : le bundle initial reste à environ 440 ko (141 ko gzip), ECharts (608 ko) étant chargé à part.
 - **Filtrage croisé** : un clic sur un pays dans le graphique en barres filtre toute l'application.
 
 ### Intégration IA en streaming
@@ -57,6 +60,16 @@ React 19, TypeScript strict, Vite, Zustand, TanStack Query, TanStack Virtual, Ap
 - TypeScript strict avec `noUncheckedIndexedAccess`.
 - La logique métier (`src/data/query.ts`) est faite de **fonctions pures**, exécutées dans le worker en production et testées directement.
 - Tests unitaires, tests de composants et 4 scénarios e2e Playwright, le tout dans une **CI GitHub Actions** (typecheck, tests, build, e2e avec rapport en cas d'échec).
+
+## Design system (shadcn/ui)
+
+- **Composants** : `src/components/ui/*` (button, card, input, label, slider, badge, toggle-group, skeleton, alert, scroll-area, tooltip), générés par `npx shadcn@latest` (preset Vega, base Radix, couleur neutral, icônes lucide importées une à une). Config dans `components.json`, alias `@/*` → `src/*`.
+- **Tokens** : tout vit dans `src/index.css` (`:root`, `.dark`, puis `@theme inline`), sans `tailwind.config.js`. Tokens shadcn standard (`background`, `card`, `muted`, `primary`, `destructive`, `chart-1..5`…) plus des tokens de statut `--success`, `--info`, `--warning` (avec `-foreground`). Conforme = success, en cours = info, à évaluer = warning, non conforme = destructive. Plus aucune couleur Tailwind en dur dans les composants.
+- **Contrastes** : valeurs vérifiées par calcul (AA 4,5:1 pour le texte, 3:1 pour les bordures de champs et les séries de graphiques) en clair et en sombre. En sombre, les badges de statut utilisent un liseré plutôt qu'une teinte de fond, qui ferait passer le contraste sous 4,5:1.
+- **Thème sombre** : classe `dark` sur `<html>`. Un script inline dans `index.html` l'applique avant le premier rendu (préférence enregistrée dans `localStorage`, sinon `prefers-color-scheme`), donc pas de flash. Le bouton de l'en-tête bascule et mémorise, avec `try/catch` autour du stockage.
+- **ECharts** dessine dans un canvas et ne lit ni `var(--x)` ni `oklch()`. `useChartTheme` lit les tokens avec `getComputedStyle`, les convertit en `rgb()` via un canvas 1x1 et se met à jour quand la classe de `<html>` change (`MutationObserver`). La carte de chaleur reste séquentielle et monotone dans les deux thèmes (de la couleur de la carte vers `--destructive`).
+- **Pourquoi pas le composant `Table` de shadcn ?** Il rend un vrai `<table>` dans un conteneur à overflow. La virtualisation positionne les lignes en absolu avec `translateY`, ce qui est incompatible avec le modèle de rendu d'un `<table>`. La table garde donc sa structure ARIA grid (`div role="grid"`, `row`, `gridcell`, `columnheader`) et ne reprend que le style shadcn : tokens, `Badge`, `Button` ghost pour le tri, icônes lucide.
+- **Captures** : `docs/` (1600×1000 et 390×844, clair et sombre).
 
 ## Anecdote utile en entretien
 

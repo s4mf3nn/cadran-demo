@@ -1,38 +1,60 @@
 import { useId } from 'react';
 import { CATEGORIES, COUNTRIES, STATUS_LABEL, STATUSES, type Risk } from '../data/types';
 import { useFilters } from '../store/filters';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Slider } from '@/components/ui/slider';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { cn } from '@/lib/utils';
+
+const LEGEND_CLASS = 'mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground';
 
 function ChipGroup<T extends string>({
-  legend, options, selected, onToggle, format = (v) => v,
+  legend, options, selected, onToggle, format = (v) => v, className,
 }: {
   legend: string;
   options: readonly T[];
   selected: T[];
   onToggle: (v: T) => void;
   format?: (v: T) => string;
+  className?: string;
 }) {
+  const legendId = useId();
+  // Les puces sont des boutons à bascule (Radix expose aria-pressed en mode "multiple").
+  // La valeur du ToggleGroup est pilotée par le store : on calcule le diff pour déclencher onToggle.
+  const onValueChange = (next: string[]) => {
+    const added = next.find((v) => !selected.includes(v as T));
+    const removed = selected.find((v) => !next.includes(v));
+    const changed = added ?? removed;
+    if (changed) onToggle(changed as T);
+  };
+
   return (
-    <fieldset>
-      <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">{legend}</legend>
-      <div className="flex flex-wrap gap-1.5">
-        {options.map((o) => {
-          const on = selected.includes(o);
-          return (
-            <button
-              key={o}
-              type="button"
-              aria-pressed={on}
-              onClick={() => onToggle(o)}
-              className={`rounded-full border px-2.5 py-1 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-blue-500 ${
-                on ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
-              }`}
-            >
-              {format(o)}
-            </button>
-          );
-        })}
-      </div>
-    </fieldset>
+    <div role="group" aria-labelledby={legendId}>
+      <div id={legendId} className={LEGEND_CLASS}>{legend}</div>
+      <ToggleGroup
+        type="multiple"
+        variant="outline"
+        size="sm"
+        spacing={1.5}
+        value={selected}
+        onValueChange={onValueChange}
+        className={cn('flex-wrap', className)}
+      >
+        {options.map((o) => (
+          <ToggleGroupItem
+            key={o}
+            value={o}
+            className="h-7 min-w-0 rounded-full px-2.5 text-xs data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:hover:bg-primary/90 data-[state=on]:hover:text-primary-foreground"
+          >
+            {format(o)}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+    </div>
   );
 }
 
@@ -47,44 +69,44 @@ export function FilterPanel() {
   const riskId = useId();
 
   return (
-    <aside className="flex flex-col gap-5 overflow-y-auto rounded-xl border border-slate-200 bg-white p-4 shadow-sm" aria-label="Filtres">
-      <div>
-        <label htmlFor={searchId} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Recherche
-        </label>
-        <input
-          id={searchId}
-          type="search"
-          value={filters.search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Référence, sujet, règlement…"
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-        />
-      </div>
+    <Card className="min-h-0 overflow-y-auto" role="complementary" aria-label="Filtres">
+      <CardContent className="flex flex-col gap-5">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor={searchId} className={cn(LEGEND_CLASS, 'mb-0')}>Recherche</Label>
+          <Input
+            id={searchId}
+            type="search"
+            value={filters.search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Référence, sujet, règlement…"
+          />
+        </div>
 
-      <ChipGroup legend="Statut" options={STATUSES} selected={filters.statuses} onToggle={(v) => toggle('statuses', v)} format={(s) => STATUS_LABEL[s]} />
+        <ChipGroup legend="Statut" options={STATUSES} selected={filters.statuses} onToggle={(v) => toggle('statuses', v)} format={(s) => STATUS_LABEL[s]} />
 
-      <div>
-        <label htmlFor={riskId} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Risque minimum : {filters.minRisk}
-        </label>
-        <input
-          id={riskId}
-          type="range"
-          min={1}
-          max={4}
-          value={filters.minRisk}
-          onChange={(e) => setMinRisk(Number(e.target.value) as Risk)}
-          className="w-full"
-        />
-      </div>
+        <div className="flex flex-col gap-3">
+          <div id={riskId} className={LEGEND_CLASS + ' mb-0'}>Risque minimum : {filters.minRisk}</div>
+          <Slider
+            aria-labelledby={riskId}
+            min={1}
+            max={4}
+            step={1}
+            value={[filters.minRisk]}
+            onValueChange={([v]) => v !== undefined && setMinRisk(v as Risk)}
+          />
+        </div>
 
-      <ChipGroup legend="Catégorie" options={CATEGORIES} selected={filters.categories} onToggle={(v) => toggle('categories', v)} />
-      <ChipGroup legend="Pays" options={COUNTRIES} selected={filters.countries} onToggle={(v) => toggle('countries', v)} />
+        <ChipGroup legend="Catégorie" options={CATEGORIES} selected={filters.categories} onToggle={(v) => toggle('categories', v)} />
 
-      <button type="button" onClick={reset} className="self-start text-sm text-blue-700 underline-offset-2 hover:underline">
-        Réinitialiser les filtres
-      </button>
-    </aside>
+        {/* 20 pays : la liste défile dans une zone bornée pour garder les autres filtres visibles. */}
+        <ScrollArea className="rounded-md [&>[data-slot=scroll-area-viewport]]:max-h-44">
+          <ChipGroup legend="Pays" options={COUNTRIES} selected={filters.countries} onToggle={(v) => toggle('countries', v)} className="pr-3" />
+        </ScrollArea>
+
+        <Button type="button" variant="link" onClick={reset} className="self-start px-0 underline">
+          Réinitialiser les filtres
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
