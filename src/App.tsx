@@ -79,12 +79,12 @@ export default function App() {
               </Card>
             ) : (
               <>
-                <dl className={cn('grid grid-cols-2 gap-4 transition-opacity md:grid-cols-4', isRefreshing && 'opacity-60')}>
+                <div role="group" aria-label="Indicateurs clés" className={cn('grid grid-cols-2 gap-4 transition-opacity md:grid-cols-4', isRefreshing && 'opacity-60')}>
                   <Kpi label="Exigences filtrées" value={aggregates.total} total={DATASET_SIZE} />
                   <Kpi label="En risque" value={aggregates.atRisk} total={DATASET_SIZE} />
                   <Kpi label="Non conformes" value={aggregates.byStatus.non_conforme} total={DATASET_SIZE} />
                   <Kpi label="Conformes" value={aggregates.byStatus.conforme} total={DATASET_SIZE} />
-                </dl>
+                </div>
                 <StatusBar aggregates={aggregates} />
                 <Suspense fallback={<Skeleton className="h-[340px] rounded-xl" aria-busy="true" />}>
                   <Charts aggregates={aggregates} />
