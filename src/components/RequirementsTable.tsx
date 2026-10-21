@@ -1,6 +1,7 @@
 import { memo, useRef, useState, type KeyboardEvent } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
+import { ArrowDown01Icon, ArrowUp01Icon, ArrowUpDownIcon } from '@hugeicons/core-free-icons';
+import { Icon } from '@/components/ui/icon';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -122,9 +123,9 @@ export const RequirementsTable = memo(function RequirementsTable({ rows }: { row
                 >
                   {c.label}
                   {isSorted ? (
-                    sort.dir === 'asc' ? <ArrowUp aria-hidden="true" className="size-3.5" /> : <ArrowDown aria-hidden="true" className="size-3.5" />
+                    sort.dir === 'asc' ? <Icon icon={ArrowUp01Icon} size={14} /> : <Icon icon={ArrowDown01Icon} size={14} />
                   ) : (
-                    <ChevronsUpDown aria-hidden="true" className="size-3.5 text-muted-foreground" />
+                    <Icon icon={ArrowUpDownIcon} size={14} className="text-muted-foreground" />
                   )}
                 </Button>
               </div>

@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react';
 import { FilterPanel } from './components/FilterPanel';
 import { RequirementsTable } from './components/RequirementsTable';
 import { AssistantPanel } from './components/AssistantPanel';
-import { ThemeToggle } from './components/ThemeToggle';
 import { DATASET_SIZE, useCadranData } from './hooks/useCadranData';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
@@ -42,7 +41,6 @@ export default function App() {
               {isRefreshing && !isLoading && ' · recalcul…'}
             </p>
           </div>
-          <ThemeToggle />
         </header>
 
         {error && (
