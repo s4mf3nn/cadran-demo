@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
   // L'assistant flottant est fermé par défaut : on l'ouvre pour les scénarios qui l'utilisent.
-  await page.addInitScript(() => localStorage.setItem('compass.panel.right', 'open'));
+  await page.addInitScript(() => localStorage.setItem('cadran.panel.right', 'open'));
   await page.goto('/');
   await expect(page.getByRole('grid', { name: 'Exigences réglementaires' })).toBeVisible({ timeout: 15_000 });
 });

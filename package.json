@@ -1,5 +1,5 @@
 {
-  "name": "compass-demo",
+  "name": "cadran-demo",
   "version": "0.1.0",
   "scripts": {
     "test": "vitest run",

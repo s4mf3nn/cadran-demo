@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { AiMagicIcon, FilterHorizontalIcon, Search01Icon } from '@hugeicons/core-free-icons';
 import type { Aggregates, Requirement } from '@/data/types';
-import { DATASET_SIZE } from '@/hooks/useCompassData';
+import { DATASET_SIZE } from '@/hooks/useCadranData';
 import type { AssistantApi } from '@/hooks/useAssistant';
 import { useUi } from '@/store/ui';
 import { AssistantPanel } from '../AssistantPanel';

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 type Side = 'left' | 'right';
 
-const key = (side: Side) => `compass.panel.${side}`;
+const key = (side: Side) => `cadran.panel.${side}`;
 
 /** Lecture protégée. Filtres ouverts par défaut ; assistant flottant fermé par défaut (il recouvre le tableau de bord). */
 function readOpen(side: Side): boolean {

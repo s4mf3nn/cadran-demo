@@ -10,7 +10,7 @@ import { ShortcutsDialog } from './components/ShortcutsDialog';
 import { AppHeader } from './components/layout/AppHeader';
 import { RightPanel } from './components/layout/RightPanel';
 import { Sidebar } from './components/layout/Sidebar';
-import { DATASET_SIZE, useCompassData } from './hooks/useCompassData';
+import { DATASET_SIZE, useCadranData } from './hooks/useCadranData';
 import { useAssistant, SUGGESTIONS } from './hooks/useAssistant';
 import { useHotkeys } from './hooks/useHotkeys';
 import { useIsMobile } from './hooks/useIsMobile';
@@ -27,7 +27,7 @@ import { cn } from '@/lib/utils';
 const Charts = lazy(() => import('./components/Charts').then((m) => ({ default: m.Charts })));
 
 export default function App() {
-  const { rows, aggregates, timings, isLoading, isRefreshing, error } = useCompassData();
+  const { rows, aggregates, timings, isLoading, isRefreshing, error } = useCadranData();
   const ui = useUi.getState;
   const isMobile = useIsMobile();
   const assistant = useAssistant(aggregates);

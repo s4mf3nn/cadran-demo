@@ -43,7 +43,7 @@ function ContextChips({ total }: { total?: number }) {
   );
 }
 
-const SUGGESTIONS_KEY = 'compass.assistant.suggestions';
+const SUGGESTIONS_KEY = 'cadran.assistant.suggestions';
 
 /** Suggestions visibles par défaut ; le choix est mémorisé (lecture/écriture protégées). */
 function useSuggestionsVisible() {

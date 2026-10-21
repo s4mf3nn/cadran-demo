@@ -13,7 +13,7 @@ export function useDataset() {
   });
 }
 
-export function useCompassData() {
+export function useCadranData() {
   const dataset = useDataset();
   const filters = useFilters((s) => s.filters);
   const sort = useFilters((s) => s.sort);
