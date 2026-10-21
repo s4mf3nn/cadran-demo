@@ -3,6 +3,7 @@ import { FilterPanel } from './components/FilterPanel';
 import { RequirementsTable } from './components/RequirementsTable';
 import { AssistantPanel } from './components/AssistantPanel';
 import { Kpi } from './components/Kpi';
+import { StatusBar } from './components/StatusBar';
 import { QuickActions } from './components/QuickActions';
 import { ShortcutsDialog } from './components/ShortcutsDialog';
 import { AppHeader } from './components/layout/AppHeader';
@@ -51,7 +52,7 @@ export default function App() {
           <AppHeader rows={rows} />
           <ViewBar timings={timings} isRefreshing={isRefreshing} />
 
-          <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 pb-6">
+          <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 pb-6 *:shrink-0">
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>Erreur : {String(error)}</AlertDescription>
@@ -69,7 +70,8 @@ export default function App() {
                   <Kpi label="Non conformes" value={aggregates.byStatus.non_conforme} total={DATASET_SIZE} />
                   <Kpi label="Conformes" value={aggregates.byStatus.conforme} total={DATASET_SIZE} />
                 </dl>
-                <Suspense fallback={<Skeleton className="h-72 rounded-xl" aria-busy="true" />}>
+                <StatusBar aggregates={aggregates} />
+                <Suspense fallback={<Skeleton className="h-[340px] rounded-xl" aria-busy="true" />}>
                   <Charts aggregates={aggregates} />
                 </Suspense>
                 <div className="h-[36rem] shrink-0">
