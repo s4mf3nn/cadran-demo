@@ -44,7 +44,7 @@ export default function App() {
     <TooltipProvider>
       <div className="flex h-screen bg-background text-foreground">
         <Sidebar>
-          <FilterPanel />
+          <FilterPanel aggregates={aggregates} />
         </Sidebar>
 
         <div className="flex min-w-0 flex-1 flex-col">

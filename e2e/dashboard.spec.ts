@@ -8,7 +8,7 @@ test.beforeEach(async ({ page }) => {
 test('filtrer met à jour les KPI et la table', async ({ page }) => {
   const kpi = page.locator('dd').first();
   const before = await kpi.textContent();
-  await page.getByRole('button', { name: 'Non conforme', exact: true }).click();
+  await page.getByRole('checkbox', { name: /Non conforme/ }).click();
   await expect(kpi).not.toHaveText(before ?? '');
   await expect(page.getByRole('row').nth(1)).toContainText('Non conforme');
 });

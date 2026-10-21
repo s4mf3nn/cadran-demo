@@ -60,4 +60,8 @@ export interface Aggregates {
   heatmap: { country: Country; category: Category; count: number }[];
   /** Échéances par mois sur les 12 prochains mois. */
   deadlines: { month: string; count: number }[];
+  /** Mêmes mois que `deadlines` (même ordre), ventilés par statut pour les barres empilées. */
+  deadlinesByStatus: Record<Status, number>[];
+  /** Exigences filtrées par catégorie (volume affiché dans le panneau de filtres). */
+  byCategory: Record<Category, number>;
 }
