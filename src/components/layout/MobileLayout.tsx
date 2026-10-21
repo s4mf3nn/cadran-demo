@@ -70,12 +70,12 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
           <p className="py-12 text-center text-muted-foreground" aria-live="polite">Chargement du référentiel…</p>
         ) : (
           <>
-            <dl className={cn('grid grid-cols-2 gap-3 transition-opacity', isRefreshing && 'opacity-60')}>
+            <div role="group" aria-label="Indicateurs clés" className={cn('grid grid-cols-2 gap-3 transition-opacity', isRefreshing && 'opacity-60')}>
               <Kpi label="Exigences filtrées" value={aggregates.total} total={DATASET_SIZE} />
               <Kpi label="En risque" value={aggregates.atRisk} total={DATASET_SIZE} />
               <Kpi label="Non conformes" value={aggregates.byStatus.non_conforme} total={DATASET_SIZE} />
               <Kpi label="Conformes" value={aggregates.byStatus.conforme} total={DATASET_SIZE} />
-            </dl>
+            </div>
             <StatusBar aggregates={aggregates} />
             <Suspense fallback={<Skeleton className="h-56 rounded-xl" aria-busy="true" />}>
               <DeadlinesChart aggregates={aggregates} compact />
