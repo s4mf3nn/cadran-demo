@@ -1,6 +1,12 @@
 import { useId, useState, type FormEvent } from 'react';
 import { useAssistantStream } from '../hooks/useAssistantStream';
 import type { Aggregates } from '../data/types';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const STATUS_TEXT = {
   idle: '',
@@ -35,48 +41,56 @@ export function AssistantPanel({ aggregates }: { aggregates?: Aggregates }) {
   };
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm" aria-labelledby={`${inputId}-title`}>
-      <h2 id={`${inputId}-title`} className="text-sm font-semibold text-slate-700">Assistant conformité (IA)</h2>
+    <Card size="sm" role="region" aria-labelledby={`${inputId}-title`} className="min-h-0 overflow-y-auto">
+      <CardHeader>
+        <CardTitle id={`${inputId}-title`} role="heading" aria-level={2} className="text-sm">Assistant conformité (IA)</CardTitle>
+      </CardHeader>
 
-      <form onSubmit={onSubmit} className="flex gap-2">
-        <label htmlFor={inputId} className="sr-only">Question à l'assistant</label>
-        <input
-          id={inputId}
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder="Ex. : que dois-je prioriser ce trimestre ?"
-          className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-        />
-        {busy ? (
-          <button key="stop" type="button" onClick={stop} className="rounded-lg bg-slate-800 px-3 py-2 text-sm font-medium text-white">
-            Stop
-          </button>
-        ) : (
-          <button key="submit" type="submit" disabled={!aggregates} className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50">
-            Analyser
-          </button>
+      <CardContent>
+        <form onSubmit={onSubmit} className="flex gap-2">
+          <Label htmlFor={inputId} className="sr-only">Question à l'assistant</Label>
+          <Input
+            id={inputId}
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder="Ex. : que dois-je prioriser ce trimestre ?"
+            className="flex-1"
+          />
+          {busy ? (
+            <Button key="stop" type="button" variant="secondary" onClick={stop}>
+              Stop
+            </Button>
+          ) : (
+            <Button key="submit" type="submit" disabled={!aggregates}>
+              Analyser
+            </Button>
+          )}
+        </form>
+
+        {/* Annonce discrète des changements d'état pour les lecteurs d'écran, sans relire chaque token. */}
+        <p role="status" className="sr-only">{STATUS_TEXT[status]}</p>
+
+        {status === 'thinking' && (
+          <div aria-hidden="true" className="space-y-2">
+            <Skeleton className="h-3 w-3/4" />
+            <Skeleton className="h-3 w-1/2" />
+          </div>
         )}
-      </form>
 
-      {/* Annonce discrète des changements d'état pour les lecteurs d'écran, sans relire chaque token. */}
-      <p role="status" className="sr-only">{STATUS_TEXT[status]}</p>
+        {text && (
+          <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground" aria-busy={busy}>
+            {renderBold(text)}
+            {status === 'streaming' && <span aria-hidden="true" className="ml-0.5 inline-block h-4 w-1.5 animate-pulse bg-muted-foreground align-middle" />}
+          </div>
+        )}
 
-      {status === 'thinking' && (
-        <div aria-hidden="true" className="space-y-2">
-          <div className="h-3 w-3/4 animate-pulse rounded bg-slate-200" />
-          <div className="h-3 w-1/2 animate-pulse rounded bg-slate-200" />
-        </div>
-      )}
-
-      {text && (
-        <div className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800" aria-busy={busy}>
-          {renderBold(text)}
-          {status === 'streaming' && <span aria-hidden="true" className="ml-0.5 inline-block h-4 w-1.5 animate-pulse bg-slate-500 align-middle" />}
-        </div>
-      )}
-
-      {status === 'aborted' && <p className="text-xs text-slate-500">Génération interrompue.</p>}
-      {status === 'error' && <p role="alert" className="text-sm text-red-700">Erreur : {error}</p>}
-    </section>
+        {status === 'aborted' && <p className="text-xs text-muted-foreground">Génération interrompue.</p>}
+        {status === 'error' && (
+          <Alert variant="destructive">
+            <AlertDescription>Erreur : {error}</AlertDescription>
+          </Alert>
+        )}
+      </CardContent>
+    </Card>
   );
 }
