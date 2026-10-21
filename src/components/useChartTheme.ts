@@ -1,22 +1,21 @@
 import { useSyncExternalStore } from 'react';
+import type { Status } from '../data/types';
 import { subscribeTheme } from './theme';
 
-/** Tokens CSS lus pour ECharts, tous convertis en rgb()/rgba() (ECharts ne sait pas parser oklch). */
+/** Tokens CSS lus pour ECharts, tous convertis en rgb()/rgba() (ECharts ne sait pas parser color-mix ni var()). */
 export interface ChartTheme {
   foreground: string;
   mutedForeground: string;
   border: string;
-  card: string;
+  /** Pointillés de grille et axes. */
+  input: string;
+  background: string;
   popover: string;
   popoverForeground: string;
-  destructive: string;
-  success: string;
-  info: string;
-  warning: string;
-  /** chart-1 à chart-5 */
-  series: string[];
-  /** Rampe séquentielle (clair → foncé en thème clair, sombre → clair en thème sombre) : monotone dans les deux thèmes. */
-  heat: string[];
+  /** Couleur pleine de chaque statut (chart-1 à chart-4, dans l'ordre Conforme, En cours, À évaluer, Non conforme). */
+  status: Record<Status, string>;
+  /** Rampe séquentielle de la carte de chaleur : bleu mélangé à 8 % puis à 90 % sur blanc. */
+  heat: [string, string];
 }
 
 let ctx: CanvasRenderingContext2D | null | undefined;
@@ -35,25 +34,21 @@ function toRgb(css: string): string {
 
 function readTheme(): ChartTheme {
   const style = getComputedStyle(document.documentElement);
-  const token = (name: string) => toRgb(style.getPropertyValue(`--${name}`).trim());
-  const card = token('card');
+  const raw = (name: string) => style.getPropertyValue(`--${name}`).trim();
+  const token = (name: string) => toRgb(raw(name));
   // color-mix est résolu par le moteur CSS puis converti : pas de calcul de couleur à la main.
-  const mixOnCard = (name: string, pct: number) =>
-    toRgb(`color-mix(in oklab, ${style.getPropertyValue(`--${name}`).trim()} ${pct}%, ${style.getPropertyValue('--card').trim()})`);
+  const mixOnWhite = (name: string, pct: number) => toRgb(`color-mix(in srgb, ${raw(name)} ${pct}%, white)`);
 
   return {
     foreground: token('foreground'),
     mutedForeground: token('muted-foreground'),
     border: token('border'),
-    card,
+    input: token('input'),
+    background: token('background'),
     popover: token('popover'),
     popoverForeground: token('popover-foreground'),
-    destructive: token('destructive'),
-    success: token('success'),
-    info: token('info'),
-    warning: token('warning'),
-    series: [1, 2, 3, 4, 5].map((i) => token(`chart-${i}`)),
-    heat: [mixOnCard('destructive', 10), mixOnCard('destructive', 55), token('destructive')],
+    status: { conforme: token('chart-1'), en_cours: token('chart-2'), a_evaluer: token('chart-3'), non_conforme: token('chart-4') },
+    heat: [mixOnWhite('chart-1', 8), mixOnWhite('chart-1', 90)],
   };
 }
 
