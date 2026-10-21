@@ -75,7 +75,7 @@ export default function App() {
                   <Charts aggregates={aggregates} />
                 </Suspense>
                 <div className="h-[36rem] shrink-0">
-                  <RequirementsTable rows={rows} />
+                  <RequirementsTable rows={rows} aggregates={aggregates} />
                 </div>
               </>
             )}

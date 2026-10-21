@@ -1,65 +1,49 @@
 import { memo, useRef, useState, type KeyboardEvent } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { ArrowDown01Icon, ArrowUp01Icon, ArrowUpDownIcon } from '@hugeicons/core-free-icons';
-import { Icon } from '@/components/ui/icon';
-import { Badge } from '@/components/ui/badge';
+import {
+  Alert02Icon, ArrowDown01Icon, ArrowUp01Icon, ArrowUpDownIcon, Calendar03Icon, File01Icon, Globe02Icon,
+  GridViewIcon, InformationCircleIcon, Tick02Icon,
+} from '@hugeicons/core-free-icons';
+import type { IconSvgElement } from '@hugeicons/react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Icon } from '@/components/ui/icon';
+import { Kbd } from '@/components/ui/kbd';
 import { cn } from '@/lib/utils';
-import { STATUS_LABEL, type Requirement, type SortKey } from '../data/types';
+import { COUNTRY_CODE } from '@/lib/labels';
+import { CATEGORIES, COUNTRIES, type Aggregates, type Requirement, type SortKey } from '../data/types';
 import { useFilters } from '../store/filters';
+import { RiskMeter } from './RiskMeter';
+import { StatusTag } from './StatusTag';
 
-const COLUMNS: { key: SortKey; label: string; width: string }[] = [
-  { key: 'ref', label: 'Référence', width: '9rem' },
-  { key: 'country', label: 'Pays', width: '9rem' },
-  { key: 'category', label: 'Catégorie', width: '9rem' },
-  { key: 'status', label: 'Statut', width: '8rem' },
-  { key: 'risk', label: 'Risque', width: '5rem' },
-  { key: 'dueAt', label: 'Échéance', width: '7rem' },
+const COLUMNS: { key: SortKey; label: string; width: string; icon: IconSvgElement }[] = [
+  { key: 'ref', label: 'Référence', width: '10.5rem', icon: File01Icon },
+  { key: 'country', label: 'Pays', width: '11rem', icon: Globe02Icon },
+  { key: 'category', label: 'Catégorie', width: '9rem', icon: GridViewIcon },
+  { key: 'status', label: 'Statut', width: '8rem', icon: InformationCircleIcon },
+  { key: 'risk', label: 'Risque', width: '6rem', icon: Alert02Icon },
+  { key: 'dueAt', label: 'Échéance', width: '8rem', icon: Calendar03Icon },
 ];
-const GRID = `${COLUMNS.map((c) => c.width).join(' ')} minmax(16rem, 1fr)`;
-const ROW_HEIGHT = 36;
-
-// Teinte légère en clair ; en sombre, une teinte plus claire ferait chuter le contraste du texte, on passe donc à un liseré.
-const STATUS_STYLE: Record<Requirement['status'], string> = {
-  conforme: 'bg-success/10 text-success dark:border-success/40 dark:bg-transparent',
-  en_cours: 'bg-info/10 text-info dark:border-info/40 dark:bg-transparent',
-  a_evaluer: 'bg-warning/10 text-warning dark:border-warning/40 dark:bg-transparent',
-  non_conforme: 'bg-destructive/10 text-destructive dark:border-destructive/40 dark:bg-transparent',
-};
-
-const RISK_FILL: Record<Requirement['risk'], string> = {
-  1: 'bg-success',
-  2: 'bg-warning',
-  3: 'bg-destructive',
-  4: 'bg-destructive',
-};
-
-/** Indicateur de risque en 4 segments ; la valeur est portée par l'aria-label de la cellule. */
-function RiskMeter({ risk }: { risk: Requirement['risk'] }) {
-  return (
-    <span aria-hidden="true" className="flex gap-0.5">
-      {[1, 2, 3, 4].map((level) => (
-        <span key={level} className={cn('h-2 w-3 rounded-[2px]', level <= risk ? RISK_FILL[risk] : 'bg-border')} />
-      ))}
-    </span>
-  );
-}
+const GRID = `2.5rem ${COLUMNS.map((c) => c.width).join(' ')} minmax(16rem, 1fr)`;
+const ROW_HEIGHT = 40;
+const CELL = 'flex h-full min-w-0 items-center border-r border-border px-3 last:border-r-0';
 
 const dateFmt = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short' });
+const nf = new Intl.NumberFormat('fr-FR');
 
 /**
  * Table virtualisée : quelle que soit la taille du résultat (150 000 lignes),
  * seules ~30 lignes existent dans le DOM. Accessible au clavier
- * (flèches, Page Up/Down, Home/End, Entrée) avec la sémantique ARIA grid.
+ * (flèches, Page Up/Down, Home/End, Espace, Entrée) avec la sémantique ARIA grid.
  */
-export const RequirementsTable = memo(function RequirementsTable({ rows }: { rows: Requirement[] }) {
+export const RequirementsTable = memo(function RequirementsTable({ rows, aggregates }: { rows: Requirement[]; aggregates?: Aggregates }) {
   const parentRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const sort = useFilters((s) => s.sort);
   const setSort = useFilters((s) => s.setSort);
   const selectedId = useFilters((s) => s.selectedId);
   const select = useFilters((s) => s.select);
+  const nbCountries = useFilters((s) => s.filters.countries.length || COUNTRIES.length);
+  const nbCategories = useFilters((s) => s.filters.categories.length || CATEGORIES.length);
 
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -77,7 +61,10 @@ export const RequirementsTable = memo(function RequirementsTable({ rows }: { row
   };
 
   const onKeyDown = (e: KeyboardEvent) => {
+    // Les touches de la grille ne doivent pas se déclencher depuis les boutons d'en-tête (Espace/Entrée = tri).
+    if (e.target !== e.currentTarget) return;
     const page = Math.floor((parentRef.current?.clientHeight ?? 400) / ROW_HEIGHT);
+    const row = rows[activeIndex];
     const keys: Record<string, () => void> = {
       ArrowDown: () => move(activeIndex + 1),
       ArrowUp: () => move(activeIndex - 1),
@@ -85,7 +72,8 @@ export const RequirementsTable = memo(function RequirementsTable({ rows }: { row
       PageUp: () => move(activeIndex - page),
       Home: () => move(0),
       End: () => move(rows.length - 1),
-      Enter: () => rows[activeIndex] && select(rows[activeIndex].id),
+      ' ': () => row && select(row.id === selectedId ? null : row.id),
+      Enter: () => row && select(row.id),
     };
     const action = keys[e.key];
     if (action) {
@@ -95,7 +83,7 @@ export const RequirementsTable = memo(function RequirementsTable({ rows }: { row
   };
 
   return (
-    <Card className="h-[28rem] min-h-0 gap-0 py-0 lg:h-full">
+    <section aria-label="Exigences" className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xs">
       <div
         role="grid"
         aria-label="Exigences réglementaires"
@@ -104,9 +92,10 @@ export const RequirementsTable = memo(function RequirementsTable({ rows }: { row
         tabIndex={0}
         onKeyDown={onKeyDown}
         ref={parentRef}
-        className="relative flex-1 overflow-auto text-sm outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+        className="relative min-h-0 flex-1 overflow-auto text-sm outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
       >
-        <div role="row" aria-rowindex={1} className="sticky top-0 z-10 grid border-b bg-muted" style={{ gridTemplateColumns: GRID }}>
+        <div role="row" aria-rowindex={1} className="sticky top-0 z-10 grid min-w-max border-b border-border bg-sidebar" style={{ gridTemplateColumns: GRID, height: ROW_HEIGHT }}>
+          <div role="columnheader" aria-label="Sélection" className={CELL} />
           {COLUMNS.map((c) => {
             const isSorted = sort.key === c.key;
             return (
@@ -114,30 +103,28 @@ export const RequirementsTable = memo(function RequirementsTable({ rows }: { row
                 key={c.key}
                 role="columnheader"
                 aria-sort={isSorted ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                className="h-full min-w-0 border-r border-border"
               >
                 <Button
                   type="button"
                   variant="ghost"
                   onClick={() => setSort(c.key)}
-                  className="h-9 w-full justify-start rounded-none px-3 font-semibold hover:bg-accent"
+                  className="h-full w-full justify-start gap-1.5 rounded-none px-3 text-xs font-medium text-muted-foreground hover:bg-accent"
                 >
-                  {c.label}
-                  {isSorted ? (
-                    sort.dir === 'asc' ? <Icon icon={ArrowUp01Icon} size={14} /> : <Icon icon={ArrowDown01Icon} size={14} />
-                  ) : (
-                    <Icon icon={ArrowUpDownIcon} size={14} className="text-muted-foreground" />
-                  )}
+                  <Icon icon={c.icon} size={14} />
+                  <span className="flex-1 text-left">{c.label}</span>
+                  <Icon icon={isSorted ? (sort.dir === 'asc' ? ArrowUp01Icon : ArrowDown01Icon) : ArrowUpDownIcon} size={14} className={isSorted ? 'text-foreground' : 'text-muted-foreground/70'} />
                 </Button>
               </div>
             );
           })}
-          <div role="columnheader" className="flex items-center px-3 font-semibold">Intitulé</div>
+          <div role="columnheader" className="flex items-center px-3 text-xs font-medium text-muted-foreground">Intitulé</div>
         </div>
 
         {rows.length === 0 ? (
           <p className="p-6 text-center text-muted-foreground">Aucune exigence ne correspond aux filtres.</p>
         ) : (
-          <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+          <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }} className="min-w-max">
             {virtualizer.getVirtualItems().map((v) => {
               const r = rows[v.index]!;
               const isActive = v.index === activeIndex;
@@ -149,31 +136,52 @@ export const RequirementsTable = memo(function RequirementsTable({ rows }: { row
                   role="row"
                   aria-rowindex={v.index + 2}
                   aria-selected={isSelected}
-                  onClick={() => { setActive(v.index); select(r.id); }}
+                  onClick={() => { setActive(v.index); select(isSelected ? null : r.id); }}
                   className={cn(
-                    'absolute left-0 grid w-full cursor-pointer items-center border-b',
-                    isSelected ? 'bg-accent' : 'hover:bg-muted/50',
-                    isActive && 'outline-2 -outline-offset-2 outline-ring',
+                    'absolute left-0 grid w-full min-w-max cursor-pointer items-center border-b border-border',
+                    isSelected ? 'bg-status-conforme-bg' : 'hover:bg-accent/60',
+                    isActive && 'shadow-[inset_0_0_0_2px_var(--ring)]',
                   )}
                   style={{ gridTemplateColumns: GRID, height: ROW_HEIGHT, transform: `translateY(${v.start}px)` }}
                 >
-                  <div role="gridcell" className="px-3 font-mono text-xs">{r.ref}</div>
-                  <div role="gridcell" className="truncate px-3">{r.country}</div>
-                  <div role="gridcell" className="truncate px-3">{r.category}</div>
-                  <div role="gridcell" className="px-3">
-                    <Badge className={STATUS_STYLE[r.status]}>{STATUS_LABEL[r.status]}</Badge>
+                  <div role="gridcell" className={cn(CELL, 'justify-center px-0')}>
+                    <span aria-hidden="true" className={cn('grid size-4 place-items-center rounded-[4px] border', isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-input-strong bg-background')}>
+                      {isSelected && <Icon icon={Tick02Icon} size={12} strokeWidth={2.2} />}
+                    </span>
                   </div>
-                  <div role="gridcell" className="px-3" aria-label={`Risque ${r.risk} sur 4`}>
-                    <RiskMeter risk={r.risk} />
+                  <div role="gridcell" className={cn(CELL, 'gap-2')}>
+                    <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center rounded-md border border-border bg-background text-muted-foreground">
+                      <Icon icon={File01Icon} size={13} />
+                    </span>
+                    <span className="truncate font-mono text-xs underline decoration-border decoration-1 underline-offset-4">{r.ref}</span>
                   </div>
-                  <div role="gridcell" className="px-3 tabular-nums">{dateFmt.format(r.dueAt)}</div>
-                  <div role="gridcell" className="truncate px-3 text-muted-foreground">{r.title}</div>
+                  <div role="gridcell" className={CELL}>
+                    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-background py-0.5 pr-2 pl-1 text-xs">
+                      <span aria-hidden="true" className="rounded-full bg-accent px-1 font-mono text-[10px] font-medium text-muted-foreground">{COUNTRY_CODE[r.country]}</span>
+                      <span className="truncate">{r.country}</span>
+                    </span>
+                  </div>
+                  <div role="gridcell" className={cn(CELL, 'truncate')}>{r.category}</div>
+                  <div role="gridcell" className={CELL}><StatusTag status={r.status} /></div>
+                  <div role="gridcell" className={CELL}><RiskMeter risk={r.risk} /></div>
+                  <div role="gridcell" className={cn(CELL, 'tabular-nums')}>{dateFmt.format(r.dueAt)}</div>
+                  <div role="gridcell" className={cn(CELL, 'truncate text-muted-foreground')}>{r.title}</div>
                 </div>
               );
             })}
           </div>
         )}
       </div>
-    </Card>
+
+      <footer className="flex h-10 shrink-0 items-center justify-between gap-4 border-t border-border bg-sidebar px-4 text-xs text-muted-foreground">
+        <p className="tabular-nums">
+          <strong className="font-medium text-foreground">{nf.format(rows.length)}</strong> exigences · {nbCountries} pays · {nbCategories} catégories
+          {aggregates && ` · ${nf.format(aggregates.byStatus.non_conforme)} non conformes · ${nf.format(aggregates.atRisk)} en risque`}
+        </p>
+        <p className="hidden items-center gap-1.5 md:flex" aria-hidden="true">
+          <Kbd>↑</Kbd><Kbd>↓</Kbd> naviguer <Kbd>Espace</Kbd> sélectionner <Kbd>↵</Kbd> ouvrir
+        </p>
+      </footer>
+    </section>
   );
 });

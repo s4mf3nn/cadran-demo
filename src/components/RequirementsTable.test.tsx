@@ -43,6 +43,16 @@ describe('RequirementsTable', () => {
     expect(useFilters.getState().selectedId).toBe(rows[2]!.id);
   });
 
+  it('bascule la sélection avec Espace', async () => {
+    const rows = generateRequirements(50);
+    render(<RequirementsTable rows={rows} />);
+    screen.getByRole('grid').focus();
+    await userEvent.keyboard('{ArrowDown} ');
+    expect(useFilters.getState().selectedId).toBe(rows[1]!.id);
+    await userEvent.keyboard(' ');
+    expect(useFilters.getState().selectedId).toBeNull();
+  });
+
   it('affiche un état vide explicite', () => {
     render(<RequirementsTable rows={[]} />);
     expect(screen.getByText(/aucune exigence/i)).toBeInTheDocument();
