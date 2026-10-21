@@ -9,7 +9,7 @@ const nf = new Intl.NumberFormat('fr-FR');
 const STACK_ORDER: Status[] = ['non_conforme', 'a_evaluer', 'en_cours', 'conforme'];
 const LEGEND_ORDER: Status[] = [...STATUSES];
 
-export function DeadlinesChart({ aggregates }: { aggregates: Aggregates }) {
+export function DeadlinesChart({ aggregates, compact = false }: { aggregates: Aggregates; compact?: boolean }) {
   const t = useChartTheme();
   const { deadlines, deadlinesByStatus } = aggregates;
 
@@ -84,13 +84,13 @@ export function DeadlinesChart({ aggregates }: { aggregates: Aggregates }) {
   const last = deadlines[deadlines.length - 1]?.month;
 
   return (
-    <Card size="sm" role="region" aria-label="Échéances sur 12 mois" className="min-w-0 flex-1">
+    <Card size="sm" role="region" aria-label="Échéances sur 12 mois" className={compact ? '' : 'min-w-0 flex-1'}>
       <CardHeader>
         <CardTitle role="heading" aria-level={2}>Échéances sur 12 mois</CardTitle>
       </CardHeader>
-      <CardContent className="min-h-0 flex-1">
+      <CardContent className={compact ? '' : 'min-h-0 flex-1'}>
         <EChart
-          className="h-full min-h-56"
+          className={compact ? 'h-56' : 'h-full min-h-56'}
           option={option}
           label={`Échéances réglementaires par mois et par statut, de ${first} à ${last}`}
         />

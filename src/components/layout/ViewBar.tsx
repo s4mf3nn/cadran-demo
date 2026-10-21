@@ -8,12 +8,36 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Icon } from '@/components/ui/icon';
+import { cn } from '@/lib/utils';
 
 export interface Timings { init?: number; query?: number }
 
-export function ViewBar({ timings, isRefreshing }: { timings: Timings; isRefreshing: boolean }) {
+export function SortButton({ className }: { className?: string }) {
   const sort = useFilters((s) => s.sort);
   const setSort = useFilters((s) => s.setSort);
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button type="button" variant="outline" size="sm" className={cn('border-dashed shadow-none', className)}>
+          <Icon icon={ArrowUpDownIcon} />
+          Trier
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuLabel>Trier par ({sort.dir === 'asc' ? 'croissant' : 'décroissant'})</DropdownMenuLabel>
+        <DropdownMenuRadioGroup value={sort.key} onValueChange={(v) => setSort(v as SortKey)}>
+          {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
+            <DropdownMenuRadioItem key={k} value={k} onSelect={(e) => { if (k === sort.key) { e.preventDefault(); setSort(k); } }}>
+              {SORT_LABEL[k]}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+export function ViewBar({ timings, isRefreshing }: { timings: Timings; isRefreshing: boolean }) {
   const activeFilters = useFilters((s) => {
     const f = s.filters;
     return f.statuses.length + f.categories.length + f.countries.length + (f.minRisk > 1 ? 1 : 0) + (f.search ? 1 : 0);
@@ -36,24 +60,7 @@ export function ViewBar({ timings, isRefreshing }: { timings: Timings; isRefresh
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button type="button" variant="outline" size="sm" className="border-dashed shadow-none">
-              <Icon icon={ArrowUpDownIcon} />
-              Trier
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuLabel>Trier par ({sort.dir === 'asc' ? 'croissant' : 'décroissant'})</DropdownMenuLabel>
-            <DropdownMenuRadioGroup value={sort.key} onValueChange={(v) => setSort(v as SortKey)}>
-              {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
-                <DropdownMenuRadioItem key={k} value={k} onSelect={(e) => { if (k === sort.key) { e.preventDefault(); setSort(k); } }}>
-                  {SORT_LABEL[k]}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <SortButton />
 
         <Button type="button" variant="outline" size="sm" className="border-dashed shadow-none" onClick={() => focusIn('left', 'filter-status')}>
           <Icon icon={FilterHorizontalIcon} />

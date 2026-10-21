@@ -186,3 +186,24 @@
     color-scheme: dark;
   }
 }
+
+/* Mobile (< 768 px) : cibles tactiles d'au moins 44 px et aucun raccourci clavier affiché. */
+@media (max-width: 767px) {
+  button:not([role='checkbox']),
+  [role='radio'],
+  [role='combobox'],
+  [role='menuitem'],
+  [role='menuitemradio'],
+  [role='option'],
+  input:not([type='checkbox']),
+  label:has([role='checkbox']) {
+    min-height: 44px;
+  }
+  button:not([role='checkbox']),
+  [role='radio'] {
+    min-width: 44px;
+  }
+  [data-slot='kbd'] {
+    display: none;
+  }
+}

@@ -9,12 +9,12 @@ import { cn } from '@/lib/utils';
 
 export const RIGHT_PANEL_ID = 'panel-right';
 
-export function AssistantHeader({ actions }: { actions?: ReactNode }) {
+export function AssistantHeader({ actions, ...props }: { actions?: ReactNode } & React.ComponentProps<'div'>) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" {...props}>
       <Icon icon={AiMagicIcon} size={18} className="text-primary" />
-      <h2 className="text-sm font-semibold">Assistant</h2>
-      <Kbd>⌘J</Kbd>
+      <span className="text-sm font-semibold">Assistant</span>
+      <Kbd aria-hidden="true">⌘J</Kbd>
       {actions}
     </div>
   );
@@ -36,7 +36,7 @@ export function RightPanel({ children }: { children: ReactNode }) {
       )}
     >
       <div className={cn('flex h-[52px] shrink-0 items-center', open ? 'justify-between px-3' : 'justify-center')}>
-        {open && <AssistantHeader />}
+        {open && <AssistantHeader role="heading" aria-level={2} />}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button type="button" variant="ghost" size="icon" aria-label={label} aria-expanded={open} aria-controls={RIGHT_PANEL_ID} onClick={() => toggle('right')}>
