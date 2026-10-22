@@ -6,7 +6,6 @@ import { useFilters } from '../store/filters';
 import type { Requirement } from '../data/types';
 import { RiskMeter } from './RiskMeter';
 import { StatusTag } from './StatusTag';
-import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
 import { Icon } from '@/components/ui/icon';
@@ -98,10 +97,15 @@ export function RequirementDetail({ assistant, isMobile }: { assistant: Assistan
   };
 
   const action = (
-    <Button type="button" disabled={busy || !assistant.ready} onClick={ask} className="h-11 gap-2 md:h-9">
-      <Icon icon={SparklesIcon} size={16} />
+    <button
+      type="button"
+      disabled={busy || !assistant.ready}
+      onClick={ask}
+      className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-foreground px-5 text-body font-medium text-background hover:bg-foreground-soft disabled:bg-track disabled:text-muted"
+    >
+      <Icon icon={SparklesIcon} size={20} />
       Demander à l'assistant
-    </Button>
+    </button>
   );
 
   if (isMobile) {
@@ -110,7 +114,7 @@ export function RequirementDetail({ assistant, isMobile }: { assistant: Assistan
         <DrawerContent className="data-[vaul-drawer-direction=bottom]:max-h-[88dvh]">
           <DrawerDescription className="sr-only">Détail de l'exigence</DrawerDescription>
           {opened && <Body r={opened} Title={DrawerTitle as typeof DialogTitle} />}
-          <div className="mt-5 border-t p-4 [&>button]:w-full">{action}</div>
+          <div className="mt-5 p-4 [&>button]:w-full">{action}</div>
         </DrawerContent>
       </Drawer>
     );
@@ -121,7 +125,7 @@ export function RequirementDetail({ assistant, isMobile }: { assistant: Assistan
       <DialogContent>
         <DialogDescription className="sr-only">Détail de l'exigence</DialogDescription>
         <Body r={opened!} Title={DialogTitle} />
-        <div className="flex justify-end border-t pt-4">{action}</div>
+        <div className="flex justify-end pt-4">{action}</div>
       </DialogContent>
     </Dialog>
   );
