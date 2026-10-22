@@ -41,6 +41,8 @@ export function useCadranData() {
     rows,
     aggregates: query.data?.result.aggregates,
     timings: { init: dataset.data?.ms, query: query.data?.ms },
+    /** Taille réelle du référentiel chargé (pas la constante demandée). */
+    datasetSize: dataset.data?.data.length,
     isLoading: dataset.isPending || (query.isPending && query.fetchStatus !== 'idle'),
     isRefreshing: isStale || query.isPlaceholderData || query.isFetching,
     error: dataset.error ?? query.error,

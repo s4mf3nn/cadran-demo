@@ -9,8 +9,6 @@ import {
 import { Icon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
 
-export interface Timings { init?: number; query?: number }
-
 export function SortButton({ className }: { className?: string }) {
   const sort = useFilters((s) => s.sort);
   const setSort = useFilters((s) => s.setSort);
@@ -33,15 +31,5 @@ export function SortButton({ className }: { className?: string }) {
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
-  );
-}
-
-export function TimingsText({ timings, isRefreshing }: { timings: Timings; isRefreshing: boolean }) {
-  return (
-    <p className="hidden truncate text-xs text-muted-foreground lg:block" aria-live="polite">
-      {timings.init != null && `génération ${timings.init.toFixed(0)} ms`}
-      {timings.query != null && ` · requête ${timings.query.toFixed(0)} ms (hors main thread)`}
-      {isRefreshing && ' · recalcul…'}
-    </p>
   );
 }

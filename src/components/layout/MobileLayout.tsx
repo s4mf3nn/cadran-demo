@@ -1,23 +1,17 @@
-import { lazy, Suspense } from 'react';
 import { AiMagicIcon, FilterHorizontalIcon, Search01Icon } from '@hugeicons/core-free-icons';
 import type { Aggregates, Requirement } from '@/data/types';
-import { DATASET_SIZE } from '@/hooks/useCadranData';
 import type { AssistantApi } from '@/hooks/useAssistant';
 import { useUi } from '@/store/ui';
 import { AssistantPanel } from '../AssistantPanel';
 import { FilterPanel } from '../FilterPanel';
-import { Kpi } from '../Kpi';
+import { GaugeRow, TopCountries, WaveGrid } from '../Dashboard';
 import { RequirementsList } from '../RequirementsList';
-import { StatusBar } from '../StatusBar';
 import { Brand, SidebarBody } from './Sidebar';
 import { SortButton } from './ViewBar';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Icon } from '@/components/ui/icon';
-import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-
-const DeadlinesChart = lazy(() => import('../DeadlinesChart').then((m) => ({ default: m.DeadlinesChart })));
 
 interface Props {
   rows: Requirement[];
@@ -52,16 +46,11 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
           <p className="py-12 text-center text-muted-foreground" aria-live="polite">Chargement du référentiel…</p>
         ) : (
           <>
-            <div role="group" aria-label="Indicateurs clés" className={cn('grid grid-cols-2 gap-3 transition-opacity', isRefreshing && 'opacity-60')}>
-              <Kpi label="Exigences filtrées" value={aggregates.total} total={DATASET_SIZE} />
-              <Kpi label="En risque" value={aggregates.atRisk} total={DATASET_SIZE} />
-              <Kpi label="Non conformes" value={aggregates.byStatus.non_conforme} total={DATASET_SIZE} />
-              <Kpi label="Conformes" value={aggregates.byStatus.conforme} total={DATASET_SIZE} />
+            <div className={cn('flex flex-col gap-3 transition-opacity', isRefreshing && 'opacity-60')}>
+              <GaugeRow a={aggregates} className="grid-cols-2 *:h-[168px] *:last:col-span-2" />
+              <WaveGrid a={aggregates} className="h-[340px]" />
+              <TopCountries a={aggregates} />
             </div>
-            <StatusBar aggregates={aggregates} />
-            <Suspense fallback={<Skeleton className="h-56 rounded-xl" aria-busy="true" />}>
-              <DeadlinesChart aggregates={aggregates} compact />
-            </Suspense>
             <RequirementsList rows={rows} />
           </>
         )}

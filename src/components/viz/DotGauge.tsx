@@ -9,7 +9,7 @@ import { SEG_BG } from './format';
 export function DotGauge({ value, dots = 10, className }: { value: number; dots?: number; className?: string }) {
   const lit = value > 0 ? Math.max(1, Math.round(value * dots)) : 0;
   return (
-    <span aria-hidden="true" className={cn('flex gap-[5px]', className)}>
+    <span aria-hidden="true" className={cn('flex gap-1', className)}>
       {Array.from({ length: dots }, (_, i) => (
         <span key={i} className={cn('size-2 rounded-full', i < lit ? SEG_BG[Math.floor((i * 5) / dots)] : 'bg-track')} />
       ))}
