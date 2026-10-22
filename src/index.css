@@ -144,6 +144,29 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Main au survol de tout élément cliquable (Tailwind 4 laisse le curseur par défaut sur les boutons). */
+  button,
+  summary,
+  select,
+  [role='button'],
+  [role='checkbox'],
+  [role='radio'],
+  [role='switch'],
+  [role='tab'],
+  [role='option'],
+  [role='menuitem'],
+  [role='menuitemradio'],
+  [role='menuitemcheckbox'],
+  [role='combobox'],
+  [role='slider'],
+  label:has(input, button, [role='checkbox'], [role='radio']) {
+    cursor: pointer;
+  }
+  :disabled,
+  [aria-disabled='true'],
+  [data-disabled]:not([data-disabled='false']) {
+    cursor: not-allowed;
+  }
   /* Focus visible : anneau blanc de 2 px avec 2 px d'écart. */
   :focus-visible {
     outline: 2px solid var(--foreground);
