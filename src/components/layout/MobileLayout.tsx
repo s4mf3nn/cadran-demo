@@ -73,7 +73,7 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
           <Icon icon={FilterHorizontalIcon} />
           Filtres
         </Button>
-        <Button type="button" variant="ghost" className="h-11 flex-1 bg-status-conforme-bg text-status-conforme-fg hover:bg-status-conforme-bg/80" aria-haspopup="dialog" onClick={() => setDrawer('right', true)}>
+        <Button type="button" variant="ghost" className="h-11 flex-1 bg-foreground text-background hover:bg-foreground/90" aria-haspopup="dialog" onClick={() => setDrawer('right', true)}>
           <Icon icon={AiMagicIcon} />
           Assistant
         </Button>

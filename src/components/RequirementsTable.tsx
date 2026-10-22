@@ -139,7 +139,7 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
                   onClick={() => { setActive(v.index); select(r.id); open(r); }}
                   className={cn(
                     'absolute left-0 grid w-full min-w-max cursor-pointer items-center border-b border-border',
-                    isSelected ? 'bg-status-conforme-bg' : 'hover:bg-accent/60',
+                    isSelected ? 'bg-surface' : 'hover:bg-accent/60',
                     isActive && 'shadow-[inset_0_0_0_2px_var(--ring)]',
                   )}
                   style={{ gridTemplateColumns: GRID, height: ROW_HEIGHT, transform: `translateY(${v.start}px)` }}

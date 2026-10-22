@@ -137,7 +137,7 @@ export function AssistantPanel({ assistant, total }: { assistant: AssistantApi; 
             Nouvelle conversation
           </Button>
         </div>
-        <div ref={scrollRef} onScroll={onScroll} aria-live="polite" aria-busy={busy} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto rounded-xl border border-border bg-muted/40 p-3">
+        <div ref={scrollRef} onScroll={onScroll} aria-live="polite" aria-busy={busy} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto rounded-xl border border-border p-3">
           {status !== 'idle' && (
             <>
               {history.map((t) => (

@@ -38,7 +38,7 @@ function Header({ r, Title }: { r: Requirement; Title: typeof DialogTitle }) {
 
 function Signals({ r }: { r: Requirement }) {
   return (
-    <div className="grid grid-cols-2 divide-x divide-border rounded-lg border bg-muted/40">
+    <div className="grid grid-cols-2 divide-x divide-border rounded-lg border bg-surface">
       <div className="flex flex-col gap-1 p-3">
         <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Échéance</span>
         <span className="text-sm font-semibold">{dateFmt.format(r.dueAt)}</span>

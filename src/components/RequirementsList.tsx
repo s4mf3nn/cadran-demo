@@ -38,7 +38,7 @@ export const RequirementsList = memo(function RequirementsList({ rows }: { rows:
                     type="button"
                     aria-pressed={isSelected}
                     onClick={() => { select(r.id); open(r); }}
-                    className={cn('flex h-full w-full flex-col justify-center gap-1 px-4 text-left', isSelected && 'bg-status-conforme-bg')}
+                    className={cn('flex h-full w-full flex-col justify-center gap-1 px-4 text-left', isSelected && 'bg-surface')}
                   >
                     <span className="flex items-center justify-between gap-2">
                       <span className="font-mono text-xs underline decoration-border underline-offset-4">{r.ref}</span>
