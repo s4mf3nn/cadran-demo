@@ -1,12 +1,21 @@
 # Cadran
 
-Cadran est un tableau de bord de pilotage de la conformité réglementaire : exigences par pays et par catégorie de produit, échéances, niveaux de risque et avancement. Il est pensé pour manipuler de gros volumes de données côté client sans jamais bloquer l'interface, et pour intégrer un assistant IA en streaming.
+Tableau de bord de pilotage de la conformité réglementaire : 150 000 exigences par pays, catégorie, statut, risque et échéance, avec un assistant IA en streaming. Projet de démonstration (données fictives, générées de façon déterministe).
 
-Les données sont entièrement fictives et générées de façon déterministe.
+Ce qu'il met en avant :
 
-| Panneaux ouverts (1600×1000) | Panneaux réduits + aide `?` | Mobile (390×844) |
+- **Performance** : gros volume de données traité côté client sans bloquer l'interface (Web Worker, transferts sans copie, virtualisation).
+- **Visualisation de données** sur mesure en SVG, dont une carte du monde interactive avec regroupement et zoom.
+- **Intégration IA** en streaming (SSE, machine à états, annulation).
+- **Accessibilité** (ARIA grid, navigation clavier, audit axe WCAG 2 AA) et **tests** à tous les niveaux.
+
+| Bureau (1600×1000) | Carte zoomée et réponse de l'assistant |
+| --- | --- |
+| ![Tableau de bord sur bureau](docs/desktop-defaut.png) | ![Carte zoomée sur l'Europe et réponse de l'assistant](docs/desktop-carte.png) |
+
+| Mobile (390×844) | Carte | Assistant |
 | --- | --- | --- |
-| ![Desktop, panneaux ouverts](docs/desktop-ouvert.png) | ![Desktop, panneaux réduits et aide](docs/desktop-reduit-aide.png) | ![Mobile](docs/mobile.png) |
+| ![Tableau de bord sur mobile](docs/mobile-accueil.png) | ![Carte sur mobile](docs/mobile-carte.png) | ![Assistant sur mobile](docs/mobile-assistant.png) |
 
 ## Lancer le projet
 
@@ -20,7 +29,7 @@ npm run build        # typecheck + build de production
 
 ## Stack
 
-React 19 (hooks), TypeScript strict, Vite, Zustand, TanStack Query, TanStack Virtual, Apache ECharts, Tailwind CSS v4, shadcn/ui (Radix UI, cmdk, vaul), Vitest, React Testing Library, Playwright, GitHub Actions.
+React 19, TypeScript strict, Vite, Zustand, TanStack Query, TanStack Virtual, d3-geo, Tailwind CSS v4, shadcn/ui (Radix UI), Vitest, React Testing Library, Playwright, GitHub Actions.
 
 ## Architecture
 
@@ -41,78 +50,77 @@ React 19 (hooks), TypeScript strict, Vite, Zustand, TanStack Query, TanStack Vir
 Assistant IA : hook useAssistantStream ──fetch + ReadableStream (SSE)──► /api/assistant
 ```
 
-### Séparation des responsabilités
-
-| Couche | Rôle | Emplacement |
-| --- | --- | --- |
-| Domaine | Types, génération des données, filtre/tri/agrégation en fonctions pures, sans dépendance à React ni au DOM | `src/data/` |
-| Transport | Client RPC du worker, parseur SSE, export CSV | `src/lib/`, `src/workers/` |
-| État client | Filtres, tri, sélection (Zustand) ; état d'interface et panneaux, persistés | `src/store/` |
-| État serveur / asynchrone | Cache et statuts de chargement des calculs du worker (TanStack Query) | `src/hooks/useCadranData.ts` |
-| Présentation | Composants de mise en page, tableau, graphiques, assistant, primitives shadcn/ui | `src/components/` |
-
 Les choix structurants :
 
-- **Les calculs sortent du main thread.** Le worker est exposé comme un backend asynchrone via une petite couche RPC (`src/lib/dataWorker.ts`) : chaque appel renvoie une `Promise`, ce qui permet de le brancher directement dans React Query et d'en obtenir cache, annulation et états de chargement sans code dédié. Remplacer le worker par une vraie API HTTP ne changerait que cette couche.
-- **La logique métier est pure.** `src/data/query.ts` n'importe ni React ni le DOM. Elle s'exécute dans le worker en production et se teste directement en Vitest.
-- **Un état par nature.** Zustand pour l'état local synchrone (filtres, panneaux), React Query pour tout ce qui est asynchrone. Les sélecteurs sont ciblés pour éviter les re-rendus en cascade.
-- **Un registre unique pour les raccourcis** (`src/lib/shortcuts.ts`) alimente à la fois le hook global `useHotkeys` et la boîte d'aide `?`, pour que la documentation ne diverge jamais du comportement.
+- **Les calculs sortent du main thread.** Le worker est exposé comme un backend asynchrone via une petite couche RPC (`src/lib/dataWorker.ts`) : chaque appel renvoie une `Promise`, branchée directement dans React Query (cache, annulation, états de chargement). Remplacer le worker par une vraie API HTTP ne changerait que cette couche.
+- **La logique métier est pure.** `src/data/query.ts` et `src/lib/geo.ts` n'importent ni React ni le DOM : ils tournent dans le worker ou le navigateur et se testent directement en Vitest.
+- **Un état par nature.** Zustand pour l'état synchrone (filtres, panneaux), React Query pour l'asynchrone, avec des sélecteurs ciblés pour éviter les re-rendus en cascade.
+- **Une source unique pour les raccourcis** (`src/lib/shortcuts.ts`) : le même registre alimente le gestionnaire clavier et la boîte d'aide `?`, qui ne peuvent donc pas diverger.
 
-## Performance sur de grands jeux de données
+## Performance
 
-- **150 000 exigences** générées et interrogées dans un **Web Worker** (`src/workers/data.worker.ts`). Le filtre, le tri et toutes les agrégations se font en une seule passe, hors du main thread.
-- Le dataset n'est cloné vers le main thread qu'une fois. Ensuite, chaque requête ne renvoie qu'un `Uint32Array` d'index, **transféré sans copie** (Transferable).
-- La table est **virtualisée** (TanStack Virtual) : quel que soit le nombre de lignes, une trentaine seulement existent dans le DOM. Un test le vérifie explicitement.
-- La saisie reste fluide grâce à `useDeferredValue` ; `keepPreviousData` évite le flash vide pendant les recalculs.
-- Les composants coûteux sont mémoïsés (`memo`, `useMemo`).
+- Filtre, tri et toutes les agrégations en **une seule passe** dans un **Web Worker**.
+- Le dataset n'est cloné vers le main thread qu'une fois ; ensuite, chaque requête ne renvoie qu'un `Uint32Array` d'index **transféré sans copie**.
+- Table **virtualisée** : une trentaine de lignes dans le DOM quel que soit le volume, ce qu'un test vérifie.
+- Saisie fluide grâce à `useDeferredValue` ; `keepPreviousData` évite le flash vide pendant les recalculs.
+- Animations (jauges, vagues, zoom de la carte) pilotées par `requestAnimationFrame` ; les vagues se redessinent sans re-rendu React et s'arrêtent hors écran.
+- **Diagnostic au profiler** : en dev, React 19 compare en profondeur les props modifiées pour sa piste « Components », ce qui coûtait environ 1 s par commit sur le tableau de 150 000 lignes. Marquer ce tableau comme valeur opaque (`Symbol.toStringTag`, en dev uniquement) a supprimé le coût.
 
 ## Visualisation de données
 
-- Deux graphiques ECharts (histogramme des échéances, carte de chaleur pays × catégorie) en **rendu canvas** : aucun nœud DOM par point.
-- **Import modulaire** d'ECharts et **chargement différé** du bloc graphique (`React.lazy`) : le bundle initial reste à environ 440 ko (141 ko gzip), ECharts (608 ko) étant chargé à part.
-- **Filtrage croisé** : un clic sur le total d'un pays dans la carte de chaleur filtre toute l'application.
-- **Thème lu depuis les tokens CSS.** ECharts dessine dans un canvas et ne comprend ni `var(--x)` ni `color-mix()`. `useChartTheme` lit les tokens avec `getComputedStyle` et les convertit en `rgb()`, de sorte que les graphiques suivent le design system sans couleur dupliquée.
-- La carte de chaleur expose un résumé textuel de ses cellules les plus exposées, et ses totaux par pays sont des boutons `aria-pressed` qui filtrent sur le pays.
+Les visualisations sont des composants **SVG maison** plutôt qu'une bibliothèque de graphiques : le design demandait des formes spécifiques (jauges segmentées, remplissages en vague, carte en points) que les bibliothèques rendent mal, et le SVG lit directement les tokens CSS du thème.
+
+- **Jauges segmentées** : un seul arc, découpé en 5 segments par `stroke-dasharray`/`dashoffset`.
+- **Cartes en vague** : sinusoïde lissée (Catmull-Rom → Bézier) dont la hauteur suit la valeur.
+- **Animation cohérente** : un hook `useTween` partagé (même durée, même courbe) qui repart de la valeur affichée si les données changent en cours d'animation.
+- **Honnêteté des chiffres** : une part au dénominateur nul s'affiche « — » plutôt qu'un 0 % trompeur.
+- **Filtrage croisé** : cliquer un pays dans le classement ou sur la carte filtre toute l'application.
+
+### Carte du monde
+
+- Projection Equal Earth (d3-geo) et tracé Natural Earth (~50 Ko), calculés une fois au chargement. Les continents sont une trame de points dont le pas reste constant à l'écran : zoomer ajoute des points au lieu de les grossir.
+- **Regroupement des pays proches** à l'échelle courante (algorithme glouton sur barycentres pondérés). Cliquer un groupe zoome juste assez pour séparer ses membres.
+- Zoom, déplacement à la souris ou au doigt, sans que le glisser ne déclenche de clic parasite.
+- Regroupement et calcul du zoom sont des fonctions pures testées unitairement.
 
 ## Intégration IA en streaming
 
-- `src/hooks/useAssistantStream.ts` consomme une réponse **SSE via `fetch` et `ReadableStream`**, et non `EventSource`, qui ne gère ni le POST ni l'annulation.
-- **Machine à états explicite** : `idle → thinking → streaming → done | aborted | error`, avec un squelette de chargement pendant la latence du premier token et un curseur pendant le flux.
-- **Annulation** par `AbortController` (bouton Stop, nouvelle question, démontage du composant).
-- **Rendu regroupé par frame** : les tokens s'accumulent dans une ref et l'état n'est mis à jour qu'une fois par `requestAnimationFrame`, au lieu d'un re-rendu par token.
-- Le parseur SSE (`src/lib/sse.ts`) gère les événements coupés entre deux chunks réseau, ce qui est couvert par des tests.
-- Seuls les **agrégats** sont envoyés au modèle, jamais les 150 000 lignes.
-- Le faux backend (`server/mockLlm.ts`, plugin Vite) simule latence et tokens. Pour brancher une vraie API, seul l'endpoint change. Le passage à WebSocket réutiliserait la même machine à états.
+- Consommation **SSE via `fetch` et `ReadableStream`** plutôt qu'`EventSource`, qui ne gère ni le POST ni l'annulation.
+- **Machine à états explicite** : `idle → thinking → streaming → done | aborted | error`.
+- **Annulation** par `AbortController` (bouton Arrêter, Échap, nouvelle question, démontage).
+- **Un rendu par frame** et non par token : les tokens s'accumulent dans une ref, l'état est mis à jour une fois par `requestAnimationFrame`.
+- Parseur SSE robuste aux événements coupés entre deux chunks réseau, couvert par des tests.
+- Seuls les **agrégats** sont envoyés au modèle, jamais les lignes brutes.
+- Backend simulé (plugin Vite en local, Vercel Function en ligne) : brancher un vrai LLM ne change que l'endpoint.
 
 ## Accessibilité
 
-- Table avec la sémantique **ARIA grid** (`aria-rowcount`, `aria-rowindex`, `aria-sort`, `aria-activedescendant`) et une **navigation clavier complète** : flèches, Page Up/Down, Home/End, Espace, Entrée.
-- Filtres en `fieldset`/`legend`, boutons bascule avec `aria-pressed`, labels associés à chaque champ.
-- Graphiques décrits par `role="img"` et `aria-label`, module ARIA d'ECharts activé.
-- L'assistant annonce ses changements d'état dans une région `role="status"` sans faire relire chaque token par les lecteurs d'écran.
-- `prefers-reduced-motion` respecté ; la couleur ne porte jamais seule l'information (chaque statut a fond, texte et libellé).
-- Audit axe (WCAG 2 AA) en e2e, en desktop et en mobile. Les champs de saisie et cases à cocher utilisent un contour à ≥ 3:1 (WCAG 1.4.11).
+- Table en **ARIA grid** (`aria-rowcount`, `aria-rowindex`, `aria-sort`, `aria-activedescendant`) avec navigation clavier complète.
+- Visualisations décrites textuellement ; points de la carte focusables et activables au clavier.
+- L'assistant annonce ses changements d'état via `role="status"` sans faire relire chaque token.
+- `prefers-reduced-motion` respecté ; la couleur ne porte jamais seule l'information ; contrastes vérifiés, y compris pour les contrôles (WCAG 1.4.11).
+- **Audit axe WCAG 2 AA** automatisé en e2e, en desktop et en mobile.
 
 ## Design system
 
-- **Tokens** dans `src/index.css` (`:root` puis `@theme inline`), sans `tailwind.config.js`. Chaque statut a trois tokens (`--status-*`, `-bg`, `-fg`).
-- **Composants** shadcn/ui au-dessus de Radix UI (dialogues, popovers, cmdk pour la palette de recherche, vaul pour les tiroirs mobiles). Icônes Hugeicons via un wrapper unique (`components/ui/icon.tsx`).
-- **Mise en page adaptative** : filtres à gauche, contenu fluide, assistant en fenêtre flottante qui se superpose sans redimensionner le tableau de bord. Les panneaux se réduisent en rail et mémorisent leur état dans `localStorage` (avec `try/catch` et repli par défaut). Sous 768 px, ils deviennent des tiroirs ouverts depuis une barre flottante, et la table devient une liste virtualisée avec des cibles tactiles de 44 px.
-- **Pourquoi pas le composant `Table` de shadcn ?** Il rend un vrai `<table>`, incompatible avec le positionnement absolu (`translateY`) de la virtualisation. La table garde donc une structure ARIA grid (`div role="grid"`, `row`, `gridcell`, `columnheader`).
+- Tokens dans `src/index.css` exposés à Tailwind v4 via `@theme inline` (couleurs, échelle typographique, rayons). Les composants n'utilisent pas de valeurs arbitraires.
+- shadcn/ui sur Radix UI, avec ses tokens redirigés vers ceux du projet.
+- Mise en page en 3 zones sur bureau (filtres, tableau de bord, assistant), panneaux réductibles et mémorisés ; sur mobile, tiroirs, liste virtualisée et cibles tactiles de 44 px.
+- La table n'utilise pas le `Table` de shadcn : un vrai `<table>` est incompatible avec le positionnement absolu de la virtualisation. Elle garde une sémantique ARIA grid sur des `div`.
 
 ## Qualité et tests
 
 - **TypeScript strict** avec `noUncheckedIndexedAccess`.
-- **Pyramide de tests** : fonctions pures (requêtes, génération, parseur SSE, raccourcis) en unitaire, composants avec Testing Library (table virtualisée, détail d'une exigence), parcours utilisateur avec Playwright (filtres, raccourcis, panneaux, annulation de l'assistant, mobile, accessibilité).
+- **Pyramide de tests** : fonctions pures en unitaire (requêtes et agrégats, génération, géographie, parseur SSE, raccourcis), composants avec Testing Library, parcours complets avec Playwright (filtres, cohérence des totaux, carte, tri, raccourcis, annulation de l'assistant, mobile, accessibilité).
 - **CI GitHub Actions** : typecheck, tests, build, puis e2e avec publication du rapport en cas d'échec.
 
 ### Retour d'expérience : un bug révélé par l'e2e
 
-Le test « l'assistant peut être interrompu » a mis au jour un défaut réel. Les boutons « Analyser » (`type="submit"`) et « Stop » (`type="button"`) occupaient le même emplacement d'un ternaire : React réutilisait le même nœud DOM, si bien qu'un clic sur Stop soumettait le formulaire et relançait une requête au lieu d'annuler la précédente. Le correctif tient en une `key` distincte par bouton et une garde dans `onSubmit` quand une génération est en cours. L'interface affiche désormais les deux boutons en permanence (Stop désactivé hors génération), ce qui supprime le piège à la source ; la garde reste en défense.
+Le test « l'assistant peut être interrompu » a mis au jour un défaut réel. Les boutons « Analyser » (`type="submit"`) et « Stop » (`type="button"`) occupaient le même emplacement d'un ternaire : React réutilisait le même nœud DOM, si bien qu'un clic sur Stop soumettait le formulaire et relançait une requête au lieu d'annuler. Correctif : une `key` distincte par bouton et une garde dans `onSubmit`. Depuis, « Arrêter » vit hors du formulaire, ce qui supprime le piège à la source ; la garde reste en défense.
 
 ## Pistes d'évolution
 
-- **WebSocket** à la place de SSE pour un dialogue bidirectionnel, avec la même machine à états.
-- `SharedArrayBuffer` ou base en mémoire type DuckDB-WASM au-delà du million de lignes.
-- Carte géographique réelle (ECharts geo ou MapLibre) à la place de la carte de chaleur.
+- Découpage du bundle (`import()` dynamique de la carte et de l'assistant).
+- `SharedArrayBuffer` ou DuckDB-WASM au-delà du million de lignes.
+- WebSocket à la place de SSE pour un dialogue bidirectionnel, avec la même machine à états.
 - Storybook pour documenter les composants.
