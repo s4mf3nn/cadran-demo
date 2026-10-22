@@ -6,6 +6,7 @@ import { AssistantPanel } from '../AssistantPanel';
 import { FilterPanel } from '../FilterPanel';
 import { GaugeRow, TopCountries, WaveGrid } from '../Dashboard';
 import { RequirementsList } from '../RequirementsList';
+import { WorldMap } from '../viz/WorldMap';
 import { Brand, SidebarBody } from './Sidebar';
 import { SortButton } from './ViewBar';
 import { Button } from '@/components/ui/button';
@@ -51,6 +52,7 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
               <WaveGrid a={aggregates} className="h-[560px] grid-cols-1 grid-rows-4" />
               <TopCountries a={aggregates} />
             </div>
+            <WorldMap a={aggregates} className={cn('transition-opacity', isRefreshing && 'opacity-60')} />
             <RequirementsList rows={rows} />
           </>
         )}

@@ -2,6 +2,7 @@ import { FilterPanel } from './components/FilterPanel';
 import { RequirementsTable } from './components/RequirementsTable';
 import { AssistantPanel } from './components/AssistantPanel';
 import { Dashboard } from './components/Dashboard';
+import { WorldMap } from './components/viz/WorldMap';
 import { RequirementDetail } from './components/RequirementDetail';
 import { SearchDialog } from './components/SearchDialog';
 import { ShortcutsDialog } from './components/ShortcutsDialog';
@@ -17,6 +18,7 @@ import { focusIn } from './lib/focus';
 import { useUi } from './store/ui';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 export default function App() {
   const { rows, aggregates, timings, datasetSize, isLoading, isRefreshing, error } = useCadranData();
@@ -54,7 +56,7 @@ export default function App() {
         <div className="flex min-w-0 flex-1 flex-col gap-3.5">
           <AppHeader rows={rows} datasetSize={datasetSize} timings={timings} isRefreshing={isRefreshing} />
 
-          <main className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto">
+          <main className="relative flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto">
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>Erreur : {String(error)}</AlertDescription>
@@ -67,6 +69,7 @@ export default function App() {
             ) : (
               <>
                 <Dashboard a={aggregates} isRefreshing={isRefreshing} />
+                <WorldMap a={aggregates} className={cn('shrink-0 transition-opacity', isRefreshing && 'opacity-60')} />
                 <div className="flex min-h-[320px] flex-1 flex-col">
                   <RequirementsTable rows={rows} aggregates={aggregates} />
                 </div>

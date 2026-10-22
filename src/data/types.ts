@@ -61,6 +61,15 @@ export const COUNTRY_HOTSPOTS: Partial<Record<(typeof COUNTRIES)[number], Partia
   'Mexique': { 'Nutrition': 4, 'Chaussures': 3 },
 };
 
+/** Position [longitude, latitude] du point de chaque pays sur la carte (centre du bassin d'activité). */
+export const COUNTRY_COORDS: Record<(typeof COUNTRIES)[number], readonly [number, number]> = {
+  'France': [2.4, 46.7], 'Allemagne': [10.4, 51.1], 'Espagne': [-3.7, 40.3], 'Italie': [12.5, 42.8],
+  'Belgique': [4.5, 50.6], 'Pays-Bas': [5.5, 52.2], 'Pologne': [19.4, 52.1], 'Royaume-Uni': [-1.8, 52.8],
+  'États-Unis': [-97, 38.5], 'Canada': [-96, 54], 'Brésil': [-50, -12], 'Chine': [108, 33],
+  'Inde': [78.5, 22], 'Japon': [138.5, 36.5], 'Corée du Sud': [127.8, 36.4], 'Australie': [135, -25],
+  'Mexique': [-102, 23.5], 'Turquie': [34.5, 39], 'Maroc': [-6.5, 32], 'Afrique du Sud': [24.5, -29.5],
+};
+
 /** Réglementations du référentiel (filtre « Réglementation »). */
 export const REGULATIONS = [
   'REACH', 'RoHS', 'DEEE', 'EN 14764', 'EN 15194', 'EN 12572', 'ISO 20957',

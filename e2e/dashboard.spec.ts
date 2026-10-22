@@ -107,6 +107,18 @@ test('clic sur un pays exposé : filtre pressé (aria-pressed)', async ({ page }
   await expect(page.getByRole('button', { name: /^Filtrer sur / }).first()).toHaveAttribute('aria-pressed', 'true');
 });
 
+test('carte : un groupe se sépare au zoom, un pays filtre', async ({ page }) => {
+  const map = page.getByRole('region', { name: 'Carte des expositions' });
+  await expect(map.getByRole('button', { name: /^Filtrer sur France/ })).toHaveCount(0);
+  await map.getByRole('button', { name: /^Zoomer sur \d+ pays \(France/ }).click();
+  const france = map.getByRole('button', { name: /^Filtrer sur France/ });
+  await expect(france).toBeVisible();
+  await expect(map.getByRole('button', { name: 'Recentrer la carte' })).toBeEnabled();
+  await france.click();
+  await expect(france).toHaveAttribute('aria-pressed', 'true');
+  await expect(map).toContainText('1 pays');
+});
+
 test('aucune violation axe WCAG 2 AA (desktop)', async ({ page }) => {
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
   expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).slice(0, 3).join(' | ')}`)).toEqual([]);
