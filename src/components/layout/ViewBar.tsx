@@ -24,7 +24,8 @@ export function SortButton({ className }: { className?: string }) {
         <DropdownMenuLabel>Trier par ({sort.dir === 'asc' ? 'croissant' : 'décroissant'})</DropdownMenuLabel>
         <DropdownMenuRadioGroup value={sort.key} onValueChange={(v) => setSort(v as SortKey)}>
           {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
-            <DropdownMenuRadioItem key={k} value={k} onSelect={(e) => { if (k === sort.key) { e.preventDefault(); setSort(k); } }}>
+            // Radix appelle onValueChange même pour l'option déjà cochée (setSort inverse alors le sens) : onSelect garde juste le menu ouvert.
+            <DropdownMenuRadioItem key={k} value={k} onSelect={(e) => { if (k === sort.key) e.preventDefault(); }}>
               {SORT_LABEL[k]}
             </DropdownMenuRadioItem>
           ))}
