@@ -1,5 +1,6 @@
 import { BigNumber } from './BigNumber';
 import { pctLabel, SEG_VAR } from './format';
+import { useTween } from './useTween';
 
 const START = 150;
 const SWEEP = 240;
@@ -37,7 +38,7 @@ export function SegmentedGauge({ value, label, radius = 48, thickness = 10, valu
   const gap = thickness + radius * 0.1;
   const seg = (length - (SEGMENTS - 1) * gap) / SEGMENTS;
   const dash = (len: number, i: number) => ({ strokeDasharray: `${len} ${length * 2}`, strokeDashoffset: -i * (seg + gap) });
-  const v = value ?? 0;
+  const v = useTween(value ?? 0);
 
   return (
     <div role="img" aria-label={pctLabel(label, value)} className="relative" style={{ width, height }}>
