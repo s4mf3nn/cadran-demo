@@ -2,10 +2,11 @@ import { memo, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useFilters } from '../store/filters';
 import type { Requirement } from '../data/types';
+import { RiskMeter } from './RiskMeter';
 import { StatusTag } from './StatusTag';
 import { cn } from '@/lib/utils';
 
-const ITEM_HEIGHT = 64;
+const ITEM_HEIGHT = 72;
 const nf = new Intl.NumberFormat('fr-FR');
 
 /** Version mobile de la table : une liste virtualisée (référence, statut, intitulé). */
@@ -17,10 +18,13 @@ export const RequirementsList = memo(function RequirementsList({ rows }: { rows:
   const virtualizer = useVirtualizer({ count: rows.length, getScrollElement: () => parentRef.current, estimateSize: () => ITEM_HEIGHT, overscan: 8 });
 
   return (
-    <section aria-label="Exigences" className="flex h-[32rem] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-      <div ref={parentRef} className="min-h-0 flex-1 overflow-y-auto">
+    <section aria-label="Exigences" className="flex h-[32rem] flex-col overflow-hidden rounded-card border-2 border-card-border bg-background">
+      <p className="shrink-0 px-5 pt-4 pb-2 text-title font-medium">
+        Exigences <span className="text-sm font-normal text-muted tabular-nums">{nf.format(rows.length)}</span>
+      </p>
+      <div ref={parentRef} className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
         {rows.length === 0 ? (
-          <p className="p-6 text-center text-muted-foreground">Aucune exigence ne correspond aux filtres.</p>
+          <p className="p-6 text-center text-muted">Aucune exigence ne correspond aux filtres.</p>
         ) : (
           <ul role="list" aria-label="Exigences réglementaires" style={{ height: virtualizer.getTotalSize() }} className="relative">
             {virtualizer.getVirtualItems().map((v) => {
@@ -31,20 +35,23 @@ export const RequirementsList = memo(function RequirementsList({ rows }: { rows:
                   key={r.id}
                   aria-setsize={rows.length}
                   aria-posinset={v.index + 1}
-                  className="absolute left-0 w-full border-b border-border"
+                  className={cn('absolute left-0 w-full border-t', v.index === 0 || isSelected || rows[v.index - 1]?.id === selectedId ? 'border-transparent' : 'border-line')}
                   style={{ height: ITEM_HEIGHT, transform: `translateY(${v.start}px)` }}
                 >
                   <button
                     type="button"
                     aria-pressed={isSelected}
                     onClick={() => { select(r.id); open(r); }}
-                    className={cn('flex h-full w-full flex-col justify-center gap-1 px-4 text-left', isSelected && 'bg-status-conforme-bg')}
+                    className={cn('flex h-full w-full flex-col justify-center gap-1.5 rounded-2xl px-3 text-left', isSelected && 'bg-surface')}
                   >
                     <span className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-xs underline decoration-border underline-offset-4">{r.ref}</span>
-                      <StatusTag status={r.status} />
+                      <span className="text-sm text-muted-soft tabular-nums">{r.ref} · {r.country}</span>
+                      <StatusTag status={r.status} className="text-sm" />
                     </span>
-                    <span className="truncate text-sm">{r.title}</span>
+                    <span className="flex items-center justify-between gap-3">
+                      <span className="truncate text-body">{r.title}</span>
+                      <RiskMeter risk={r.risk} className="shrink-0" />
+                    </span>
                   </button>
                 </li>
               );
@@ -52,7 +59,6 @@ export const RequirementsList = memo(function RequirementsList({ rows }: { rows:
           </ul>
         )}
       </div>
-      <p className="border-t border-border bg-sidebar px-4 py-2 text-xs text-muted-foreground tabular-nums">{nf.format(rows.length)} exigences</p>
     </section>
   );
 });

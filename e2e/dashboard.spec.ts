@@ -2,18 +2,26 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
-  // L'assistant flottant est fermé par défaut : on l'ouvre pour les scénarios qui l'utilisent.
-  await page.addInitScript(() => localStorage.setItem('cadran.panel.right', 'open'));
   await page.goto('/');
   await expect(page.getByRole('grid', { name: 'Exigences réglementaires' })).toBeVisible({ timeout: 15_000 });
 });
 
-test('filtrer met à jour les KPI et la table', async ({ page }) => {
-  const kpi = page.locator('dd').first();
-  const before = await kpi.textContent();
-  await page.getByRole('checkbox', { name: /Non conforme/ }).click();
-  await expect(kpi).not.toHaveText(before ?? '');
+test('filtrer met à jour les jauges et la table', async ({ page }) => {
+  const gauge = page.getByRole('img', { name: /^Non conformes / });
+  await expect(gauge).not.toHaveAttribute('aria-label', 'Non conformes 100 %');
+  const pill = page.getByRole('complementary', { name: 'Filtres' }).getByRole('button', { name: /^Non conforme/ });
+  await pill.click();
+  await expect(pill).toHaveAttribute('aria-pressed', 'true');
+  await expect(gauge).toHaveAttribute('aria-label', 'Non conformes 100 %');
   await expect(page.getByRole('row').nth(1)).toContainText('Non conforme');
+});
+
+test('les quatre statuts totalisent le nombre d’exigences filtrées', async ({ page }) => {
+  const pills = page.getByRole('complementary', { name: 'Filtres' }).getByRole('group', { name: 'Statut' }).getByRole('button');
+  const volumes = await pills.allTextContents();
+  const sum = volumes.map((t) => Number(t.replace(/\D/g, ''))).reduce((a, b) => a + b, 0);
+  const total = Number((await page.getByText(/exigences correspondent/).textContent())!.replace(/\D/g, ''));
+  expect(sum).toBe(total);
 });
 
 test('la table reste virtualisée sur 150 000 lignes', async ({ page }) => {
@@ -25,21 +33,23 @@ test('la table reste virtualisée sur 150 000 lignes', async ({ page }) => {
 });
 
 test("l'assistant affiche un état d'attente puis streame la réponse", async ({ page }) => {
-  await page.getByRole('button', { name: 'Analyser' }).click();
-  await expect(page.getByRole('button', { name: 'Stop' })).toBeVisible();
+  await page.getByRole('button', { name: 'Envoyer' }).click();
+  await expect(page.getByRole('button', { name: /Arrêter/ })).toBeVisible();
   await expect(page.getByText('Constat principal')).toBeVisible({ timeout: 10_000 });
-  await expect(page.getByRole('button', { name: 'Analyser' })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole('button', { name: 'Envoyer' })).toBeEnabled({ timeout: 15_000 });
+  await expect(page.getByRole('list', { name: 'Pays cités' }).getByRole('listitem')).toHaveCount(2);
 });
 
 test("l'assistant peut être interrompu", async ({ page }) => {
-  await page.getByRole('button', { name: 'Analyser' }).click();
-  await page.getByRole('button', { name: 'Stop' }).click();
+  await page.getByRole('button', { name: 'Envoyer' }).click();
+  await page.getByRole('button', { name: /Arrêter/ }).click();
   await expect(page.getByText('Génération interrompue.', { exact: true }).last()).toBeVisible();
 });
 
 test('( réduit le panneau de filtres, et son état survit à un rechargement', async ({ page }) => {
   const left = page.getByRole('button', { name: /panneau de filtres/ });
   await expect(left).toHaveAttribute('aria-expanded', 'true');
+  const before = (await page.getByRole('main').boundingBox())!.width;
   await page.keyboard.press('(');
   await expect(left).toHaveAttribute('aria-expanded', 'false');
   await page.reload();
@@ -47,7 +57,7 @@ test('( réduit le panneau de filtres, et son état survit à un rechargement', 
   await expect(page.getByRole('button', { name: /panneau de filtres/ })).toHaveAttribute('aria-expanded', 'false');
   // Le centre prend la largeur libérée.
   const box = await page.getByRole('main').boundingBox();
-  expect(box!.width).toBeGreaterThan(1400);
+  expect(box!.width).toBeGreaterThan(before + 150);
 });
 
 test('? ouvre l’aide qui liste les raccourcis', async ({ page }) => {
@@ -55,7 +65,7 @@ test('? ouvre l’aide qui liste les raccourcis', async ({ page }) => {
   const dialog = page.getByRole('dialog', { name: 'Raccourcis clavier' });
   await expect(dialog).toBeVisible();
   for (const label of ['Rechercher', 'Lancer la suggestion 3', 'Ouvrir la ligne']) {
-    await expect(dialog.getByText(label)).toBeVisible();
+    await expect(dialog.getByText(label).first()).toBeVisible();
   }
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
@@ -78,16 +88,50 @@ test('⌘J met le focus sur la question, 1 lance une suggestion, Échap l’arr�
   await expect(page.locator('#assistant-input')).toBeFocused();
   await page.locator('#filter-status').focus();
   await page.keyboard.press('1');
-  await expect(page.getByRole('button', { name: /Stop/ })).toBeEnabled();
+  await expect(page.getByRole('button', { name: /Arrêter/ })).toBeEnabled();
   await page.keyboard.press('Escape');
   await expect(page.getByText('Génération interrompue.', { exact: true }).last()).toBeVisible();
 });
 
-test('clic sur la barre d’un pays : filtre pressé (aria-pressed)', async ({ page }) => {
+test('l’assistant se ferme et se rouvre avec ⌘J', async ({ page }) => {
+  await page.getByRole('button', { name: "Fermer l'assistant" }).click();
+  await expect(page.locator('#assistant-input')).toBeHidden();
+  await page.keyboard.press('Control+j');
+  await expect(page.locator('#assistant-input')).toBeFocused();
+});
+
+test('clic sur un pays exposé : filtre pressé (aria-pressed)', async ({ page }) => {
   const bar = page.getByRole('button', { name: /^Filtrer sur / }).first();
   await expect(bar).toHaveAttribute('aria-pressed', 'false');
   await bar.click();
   await expect(page.getByRole('button', { name: /^Filtrer sur / }).first()).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('carte : un groupe se sépare au zoom, un pays filtre', async ({ page }) => {
+  const map = page.getByRole('region', { name: 'Carte des expositions' });
+  await expect(map.getByRole('button', { name: /^Filtrer sur France/ })).toHaveCount(0);
+  await map.getByRole('button', { name: /^Zoomer sur \d+ pays \(France/ }).click();
+  const france = map.getByRole('button', { name: /^Filtrer sur France/ });
+  await expect(france).toBeVisible();
+  await expect(map.getByRole('button', { name: 'Recentrer la carte' })).toBeEnabled();
+  await france.click();
+  await expect(france).toHaveAttribute('aria-pressed', 'true');
+  await expect(map).toContainText('1 pays');
+});
+
+test('« Trié par … » ouvre le menu de tri comme sur mobile', async ({ page }) => {
+  const trigger = page.getByRole('button', { name: /^Trié par échéance/ });
+  await trigger.click();
+  await page.getByRole('menuitemradio', { name: 'Pays' }).click();
+  const country = page.getByRole('columnheader', { name: 'Pays' });
+  await expect(country).toHaveAttribute('aria-sort', 'ascending');
+  await expect(page.getByRole('button', { name: /^Trié par pays/ })).toContainText('↑');
+  // Choisir à nouveau le tri actif inverse le sens, sans fermer le menu.
+  await page.getByRole('button', { name: /^Trié par pays/ }).click();
+  await page.getByRole('menuitemradio', { name: 'Pays' }).click();
+  await expect(page.getByRole('menu')).toContainText('décroissant');
+  await page.keyboard.press('Escape');
+  await expect(country).toHaveAttribute('aria-sort', 'descending');
 });
 
 test('aucune violation axe WCAG 2 AA (desktop)', async ({ page }) => {

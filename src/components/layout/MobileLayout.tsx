@@ -1,24 +1,18 @@
-import { lazy, Suspense } from 'react';
 import { AiMagicIcon, FilterHorizontalIcon, Search01Icon } from '@hugeicons/core-free-icons';
 import type { Aggregates, Requirement } from '@/data/types';
-import { DATASET_SIZE } from '@/hooks/useCadranData';
 import type { AssistantApi } from '@/hooks/useAssistant';
 import { useUi } from '@/store/ui';
 import { AssistantPanel } from '../AssistantPanel';
 import { FilterPanel } from '../FilterPanel';
-import { Kpi } from '../Kpi';
+import { GaugeRow, TopCountries, WaveGrid } from '../Dashboard';
 import { RequirementsList } from '../RequirementsList';
-import { StatusBar } from '../StatusBar';
+import { WorldMap } from '../viz/WorldMap';
 import { Brand, SidebarBody } from './Sidebar';
 import { SortButton } from './ViewBar';
-import { AssistantHeader } from './RightPanel';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Icon } from '@/components/ui/icon';
-import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-
-const DeadlinesChart = lazy(() => import('../DeadlinesChart').then((m) => ({ default: m.DeadlinesChart })));
 
 interface Props {
   rows: Requirement[];
@@ -36,7 +30,7 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
 
   return (
     <div className="flex h-dvh flex-col bg-background text-foreground">
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
+      <header className="flex h-14 shrink-0 items-center justify-between px-4">
         <Brand />
         <Button type="button" variant="ghost" size="icon" aria-label="Rechercher" onClick={() => useUi.getState().setSearchOpen(true)}>
           <Icon icon={Search01Icon} size={20} />
@@ -45,7 +39,7 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
 
       <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pt-4 pb-24 *:shrink-0">
         <div className="flex items-center justify-between gap-2">
-          <h1 className="text-lg font-semibold">Tableau de bord</h1>
+          <h1 className="text-2xl font-semibold tracking-[-0.02em]">Tableau de bord</h1>
           <SortButton />
         </div>
 
@@ -53,27 +47,23 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
           <p className="py-12 text-center text-muted-foreground" aria-live="polite">Chargement du référentiel…</p>
         ) : (
           <>
-            <div role="group" aria-label="Indicateurs clés" className={cn('grid grid-cols-2 gap-3 transition-opacity', isRefreshing && 'opacity-60')}>
-              <Kpi label="Exigences filtrées" value={aggregates.total} total={DATASET_SIZE} />
-              <Kpi label="En risque" value={aggregates.atRisk} total={DATASET_SIZE} />
-              <Kpi label="Non conformes" value={aggregates.byStatus.non_conforme} total={DATASET_SIZE} />
-              <Kpi label="Conformes" value={aggregates.byStatus.conforme} total={DATASET_SIZE} />
+            <div className={cn('flex flex-col gap-3 transition-opacity', isRefreshing && 'opacity-60')}>
+              <GaugeRow a={aggregates} className="grid-cols-2 *:h-[168px] *:last:col-span-2" />
+              <WaveGrid a={aggregates} className="h-[560px] grid-cols-1 grid-rows-4" />
+              <TopCountries a={aggregates} />
             </div>
-            <StatusBar aggregates={aggregates} />
-            <Suspense fallback={<Skeleton className="h-56 rounded-xl" aria-busy="true" />}>
-              <DeadlinesChart aggregates={aggregates} compact />
-            </Suspense>
+            <WorldMap a={aggregates} className={cn('transition-opacity', isRefreshing && 'opacity-60')} />
             <RequirementsList rows={rows} />
           </>
         )}
       </main>
 
-      <nav aria-label="Panneaux" className="fixed inset-x-4 bottom-4 z-40 flex gap-2 rounded-2xl border border-border bg-background p-2 shadow-lg">
-        <Button type="button" variant="outline" className="h-11 flex-1" aria-haspopup="dialog" onClick={() => setDrawer('left', true)}>
+      <nav aria-label="Panneaux" className="fixed inset-x-4 bottom-4 z-40 flex gap-2 rounded-full border-2 border-card-border bg-background p-1.5">
+        <Button type="button" variant="ghost" className="h-11 flex-1 rounded-full bg-surface hover:bg-track" aria-haspopup="dialog" onClick={() => setDrawer('left', true)}>
           <Icon icon={FilterHorizontalIcon} />
           Filtres
         </Button>
-        <Button type="button" variant="ghost" className="h-11 flex-1 bg-status-conforme-bg text-status-conforme-fg hover:bg-status-conforme-bg/80" aria-haspopup="dialog" onClick={() => setDrawer('right', true)}>
+        <Button type="button" variant="ghost" className="h-11 flex-1 rounded-full bg-foreground text-background hover:bg-foreground-soft" aria-haspopup="dialog" onClick={() => setDrawer('right', true)}>
           <Icon icon={AiMagicIcon} />
           Assistant
         </Button>
@@ -81,7 +71,7 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
 
       <Drawer open={leftDrawer} onOpenChange={(o) => setDrawer('left', o)}>
         <DrawerContent className="data-[vaul-drawer-direction=bottom]:max-h-[88dvh]">
-          <DrawerHeader className="text-left">
+          <DrawerHeader className="sr-only">
             <DrawerTitle>Filtres</DrawerTitle>
             <DrawerDescription className="sr-only">Affiner les exigences affichées</DrawerDescription>
           </DrawerHeader>
@@ -95,11 +85,11 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
 
       <Drawer open={rightDrawer} onOpenChange={(o) => setDrawer('right', o)}>
         <DrawerContent className="h-[88dvh] data-[vaul-drawer-direction=bottom]:max-h-[88dvh]">
-          <DrawerHeader className="text-left">
-            <DrawerTitle asChild><AssistantHeader /></DrawerTitle>
+          <DrawerHeader className="sr-only">
+            <DrawerTitle>Assistant</DrawerTitle>
             <DrawerDescription className="sr-only">Poser une question sur la sélection courante</DrawerDescription>
           </DrawerHeader>
-          <AssistantPanel assistant={assistant} total={aggregates?.total} />
+          <AssistantPanel assistant={assistant} total={aggregates?.total} aggregates={aggregates} />
         </DrawerContent>
       </Drawer>
     </div>

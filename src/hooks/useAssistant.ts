@@ -32,7 +32,13 @@ export function useAssistant(aggregates?: Aggregates) {
       }
       ask({
         question,
-        context: { total: aggregates.total, atRisk: aggregates.atRisk, topCountry: aggregates.byCountry[0]?.country },
+        context: {
+          total: aggregates.total,
+          atRisk: aggregates.atRisk,
+          topCountry: aggregates.byCountry[0]?.country,
+          // Deux premiers pays en risque, avec leur volume : la réponse les cite (mini-cartes côté interface).
+          topCountries: aggregates.byCountry.filter((c) => c.count > 0).slice(0, 2),
+        },
       });
     },
     [ask, aggregates, status, lastQuestion, text, error],

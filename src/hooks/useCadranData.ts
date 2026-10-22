@@ -34,13 +34,21 @@ export function useCadranData() {
     const data = dataset.data?.data;
     const indices = query.data?.result.indices;
     if (!data || !indices) return [];
-    return Array.from(indices, (i) => data[i]!);
+    const rows = Array.from(indices, (i) => data[i]!);
+    // En dev, React 19 diffe en profondeur les props changées de chaque composant re-rendu
+    // (pistes « Components » des DevTools) et sa limite de 100 éléments ne s'applique pas quand
+    // les éléments diffèrent : un tableau dont les lignes se décalent (seuil de risque) coûte
+    // ~1 s par commit. Un tag de type propre le fait traiter comme une valeur opaque.
+    if (import.meta.env.DEV) Object.defineProperty(rows, Symbol.toStringTag, { value: 'Requirements' });
+    return rows;
   }, [dataset.data, query.data]);
 
   return {
     rows,
     aggregates: query.data?.result.aggregates,
     timings: { init: dataset.data?.ms, query: query.data?.ms },
+    /** Taille réelle du référentiel chargé (pas la constante demandée). */
+    datasetSize: dataset.data?.data.length,
     isLoading: dataset.isPending || (query.isPending && query.fetchStatus !== 'idle'),
     isRefreshing: isStale || query.isPlaceholderData || query.isFetching,
     error: dataset.error ?? query.error,

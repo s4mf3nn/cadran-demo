@@ -61,7 +61,22 @@ export const COUNTRY_HOTSPOTS: Partial<Record<(typeof COUNTRIES)[number], Partia
   'Mexique': { 'Nutrition': 4, 'Chaussures': 3 },
 };
 
-export const STATUSES =['conforme', 'en_cours', 'a_evaluer', 'non_conforme'] as const;
+/** Position [longitude, latitude] du point de chaque pays sur la carte (centre du bassin d'activité). */
+export const COUNTRY_COORDS: Record<(typeof COUNTRIES)[number], readonly [number, number]> = {
+  'France': [2.4, 46.7], 'Allemagne': [10.4, 51.1], 'Espagne': [-3.7, 40.3], 'Italie': [12.5, 42.8],
+  'Belgique': [4.5, 50.6], 'Pays-Bas': [5.5, 52.2], 'Pologne': [19.4, 52.1], 'Royaume-Uni': [-1.8, 52.8],
+  'États-Unis': [-97, 38.5], 'Canada': [-96, 54], 'Brésil': [-50, -12], 'Chine': [108, 33],
+  'Inde': [78.5, 22], 'Japon': [138.5, 36.5], 'Corée du Sud': [127.8, 36.4], 'Australie': [135, -25],
+  'Mexique': [-102, 23.5], 'Turquie': [34.5, 39], 'Maroc': [-6.5, 32], 'Afrique du Sud': [24.5, -29.5],
+};
+
+/** Réglementations du référentiel (filtre « Réglementation »). */
+export const REGULATIONS = [
+  'REACH', 'RoHS', 'DEEE', 'EN 14764', 'EN 15194', 'EN 12572', 'ISO 20957',
+  'CPSIA', 'Prop 65', 'GB 18401', 'UKCA', 'Loi AGEC', 'Étiquetage textile', 'CE Marking',
+] as const;
+
+export const STATUSES = ['conforme', 'en_cours', 'a_evaluer', 'non_conforme'] as const;
 
 export const STATUS_LABEL: Record<Status, string> = {
   conforme: 'Conforme',
@@ -73,13 +88,20 @@ export const STATUS_LABEL: Record<Status, string> = {
 export type Country = (typeof COUNTRIES)[number];
 export type Category = (typeof CATEGORIES)[number];
 export type Status = (typeof STATUSES)[number];
-export type Risk = 1 | 2 | 3 | 4;
+export type Regulation = (typeof REGULATIONS)[number];
+/** Risque de 1 (Faible) à 5 (Critique). */
+export type Risk = 1 | 2 | 3 | 4 | 5;
+export const RISKS = [1, 2, 3, 4, 5] as const satisfies readonly Risk[];
+/** Seuil de risque à partir duquel une exigence est « en risque » (avec les non conformes). */
+export const AT_RISK_MIN: Risk = 4;
+/** Fenêtres d'échéance du filtre, en jours (retards inclus). */
+export type DueWithin = 30 | 90 | 365;
 
 export interface Requirement {
   id: number;
   ref: string;
   title: string;
-  regulation: string;
+  regulation: Regulation;
   country: Country;
   category: Category;
   status: Status;
@@ -93,7 +115,10 @@ export interface Filters {
   countries: Country[];
   categories: Category[];
   statuses: Status[];
+  regulations: Regulation[];
   minRisk: Risk;
+  /** Échéance au plus tard dans N jours (retards inclus) ; null = toutes. */
+  dueWithin: DueWithin | null;
 }
 
 export type SortKey = 'ref' | 'country' | 'category' | 'status' | 'risk' | 'dueAt';
@@ -106,9 +131,16 @@ export interface Aggregates {
   total: number;
   atRisk: number;
   byStatus: Record<Status, number>;
-  /** Non-conformités par pays, triées décroissant. */
+  /** Volumes par statut avec tous les filtres sauf le statut (pilules du panneau de filtres). */
+  statusFacets: Record<Status, number>;
+  byRisk: Record<Risk, number>;
+  /** Non conformes dont l'échéance est passée. */
+  overdueNonConforme: number;
+  /** Échéance dans les 90 prochains jours (retards exclus). */
+  dueWithin90: number;
+  /** Exigences en risque (non conformes ou risque >= AT_RISK_MIN) par pays, triées décroissant. */
   byCountry: { country: Country; count: number }[];
-  /** Matrice pays x catégorie du nombre d'exigences non conformes ou en risque >= 3. */
+  /** Matrice pays x catégorie du nombre d'exigences en risque. */
   heatmap: { country: Country; category: Category; count: number }[];
   /** Échéances par mois sur les 12 prochains mois. */
   deadlines: { month: string; count: number }[];

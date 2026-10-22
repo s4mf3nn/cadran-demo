@@ -6,7 +6,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Mode clair uniquement pour l'instant : le bloc .dark ci-dessous est conservé mais plus appliqué. */
+/* Thème sombre uniquement (« esprit stats ») : noir, cartes à contour fin, échelle de segments vert vers rose. */
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -19,7 +19,7 @@
   }
 }
 
-/* Curseur de streaming : bleu, clignotant (figé si l'utilisateur demande moins d'animations). */
+/* Curseur de streaming : petit rectangle blanc clignotant (figé si l'utilisateur demande moins d'animations). */
 @keyframes caret-blink {
   50% { opacity: 0; }
 }
@@ -29,162 +29,157 @@
 
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: 'Inter Variable', sans-serif;
+  --font-sans: -apple-system, 'SF Pro Text', 'Inter Variable', system-ui, sans-serif;
   --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-success-foreground: var(--success-foreground);
-  --color-success: var(--success);
-  --color-info-foreground: var(--info-foreground);
-  --color-info: var(--info);
-  --color-warning-foreground: var(--warning-foreground);
-  --color-warning: var(--warning);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --color-foreground: var(--foreground);
+
+  /* Échelle typographique : à régler ici, pas dans les composants. */
+  --text-display: 26px;
+  --text-stat: 24px;
+  --text-title: 15px;
+  --text-body: 13px;
+  --text-caption: 11.5px;
+  --text-micro: 10px;
+  --text-xs: 11px;
+  --text-sm: 12.5px;
+  --text-base: 14px;
+
+  /* Tokens du design */
   --color-background: var(--background);
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 12px;
-  --radius-2xl: 16px;
-  --radius-3xl: 20px;
-  --radius-4xl: 999px;
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
-  --color-sidebar: var(--sidebar);
-  --color-input-strong: var(--input-strong);
+  --color-card-border: var(--card-border);
+  --color-surface: var(--surface);
+  --color-track: var(--track);
+  --color-line: var(--line);
+  --color-foreground: var(--foreground);
+  --color-foreground-soft: var(--foreground-soft);
+  --color-muted: var(--muted);
+  --color-muted-soft: var(--muted-soft);
+  --color-help: var(--help);
+  --color-seg-1: var(--seg-1);
+  --color-seg-2: var(--seg-2);
+  --color-seg-3: var(--seg-3);
+  --color-seg-4: var(--seg-4);
+  --color-seg-5: var(--seg-5);
   --color-status-conforme: var(--status-conforme);
-  --color-status-conforme-bg: var(--status-conforme-bg);
-  --color-status-conforme-fg: var(--status-conforme-fg);
   --color-status-en-cours: var(--status-en-cours);
-  --color-status-en-cours-bg: var(--status-en-cours-bg);
-  --color-status-en-cours-fg: var(--status-en-cours-fg);
   --color-status-a-evaluer: var(--status-a-evaluer);
-  --color-status-a-evaluer-bg: var(--status-a-evaluer-bg);
-  --color-status-a-evaluer-fg: var(--status-a-evaluer-fg);
   --color-status-non-conforme: var(--status-non-conforme);
-  --color-status-non-conforme-bg: var(--status-non-conforme-bg);
-  --color-status-non-conforme-fg: var(--status-non-conforme-fg);
+
+  /* Alias shadcn/ui, redirigés vers les tokens ci-dessus */
+  --color-muted-foreground: var(--muted);
+  --color-card: var(--background);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--foreground);
+  --color-primary: var(--foreground);
+  --color-primary-foreground: var(--background);
+  --color-secondary: var(--surface);
+  --color-secondary-foreground: var(--foreground);
+  --color-accent: var(--track);
+  --color-accent-foreground: var(--foreground);
+  --color-destructive: var(--status-non-conforme);
+  --color-border: var(--track);
+  --color-input: var(--track);
+  --color-input-strong: var(--input-strong);
+  --color-ring: var(--foreground);
+  --color-sidebar: var(--background);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 16px;
+  --radius-2xl: 18px;
+  --radius-3xl: 22px;
+  --radius-4xl: 999px;
+  --radius-pill: 18px;
+  --radius-wave: 26px;
+  --radius-card: 28px;
+
+  /* Aucune ombre */
+  --shadow-2xs: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #1c1d1f;
-  --card: #ffffff;
-  --card-foreground: #1c1d1f;
-  --popover: #ffffff;
-  --popover-foreground: #1c1d1f;
-  --sidebar: #f9f9fa;
-  --primary: #2c5ed6;
-  --primary-foreground: #ffffff;
-  --secondary: #f2f2f4;
-  --secondary-foreground: #1c1d1f;
-  --muted: #f2f2f4;
-  --muted-foreground: #6b6b73;
-  --accent: #f2f2f4;
-  --accent-foreground: #1c1d1f;
-  --destructive: #b02f29;
-  --border: #ececee;
-  --input: #e0e0e4;
-  /* Bordure des champs de saisie : --input (1,3:1) n'atteint pas les 3:1 de WCAG 1.4.11. */
-  --input-strong: #85858e;
-  --ring: #3a6ee6;
-  --status-conforme: #3a6ee6;
-  --status-conforme-bg: #e9effd;
-  --status-conforme-fg: #2452c2;
-  --status-en-cours: #e8a93a;
-  --status-en-cours-bg: #fdf3df;
-  --status-en-cours-fg: #865500;
-  --status-a-evaluer: #a8a8b0;
-  --status-a-evaluer-bg: #f0f0f2;
-  --status-a-evaluer-fg: #52525a;
-  --status-non-conforme: #ec625b;
-  --status-non-conforme-bg: #fdeceb;
-  --status-non-conforme-fg: #b02f29;
-  --chart-1: #3a6ee6;
-  --chart-2: #e8a93a;
-  --chart-3: #a8a8b0;
-  --chart-4: #ec625b;
-  --chart-5: #3a6ee6;
-  /* Alias hérités, conservés le temps de la migration des composants. */
-  --success: #2452c2;
-  --success-foreground: #ffffff;
-  --info: #2452c2;
-  --info-foreground: #ffffff;
-  --warning: #865500;
-  --warning-foreground: #ffffff;
+  --background: #000000;
+  --card-border: #1f1f21;
+  --surface: #1c1c1e;
+  --track: #2c2c2e;
+  --line: #1c1c1e;
+  --foreground: #ffffff;
+  --foreground-soft: #e5e5ea;
+  --muted: #8e8e93;
+  --muted-soft: #aeaeb2;
+  /* #3a3a3c (1,9:1) ne passe pas les 3:1 exigés pour une commande (WCAG 1.4.11) : éclairci à 4,1:1. */
+  --help: #6e6e73;
+  --seg-1: #63e6a4;
+  --seg-2: #86b8a0;
+  --seg-3: #ab9fac;
+  --seg-4: #cc78a6;
+  --seg-5: #ee4c9a;
+  --status-conforme: #63e6a4;
+  --status-en-cours: #f6a93b;
+  --status-a-evaluer: #8e8e93;
+  --status-non-conforme: #ee4c9a;
+  /* Contour des champs shadcn (popover, dialogues) : 4,1:1 sur noir. */
+  --input-strong: #6e6e73;
   --radius: 0.75rem;
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.72 0 0);
-  --accent: oklch(0.3 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.76 0.19 22);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(0.56 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.7 0.15 260);
-  --chart-2: oklch(0.75 0.12 190);
-  --chart-3: oklch(0.8 0.15 80);
-  --chart-4: oklch(0.7 0.19 305);
-  --chart-5: oklch(0.72 0.19 10);
-  --success: oklch(0.78 0.17 150);
-  --success-foreground: oklch(0.145 0 0);
-  --info: oklch(0.76 0.13 250);
-  --info-foreground: oklch(0.145 0 0);
-  --warning: oklch(0.82 0.15 80);
-  --warning-foreground: oklch(0.145 0 0);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    @apply font-sans;
+    color-scheme: dark;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
   body {
     @apply bg-background text-foreground;
   }
-  html {
-    @apply font-sans;
-    letter-spacing: -0.006em;
-    font-feature-settings: 'cv11', 'ss01';
+  /* Main au survol de tout élément cliquable (Tailwind 4 laisse le curseur par défaut sur les boutons). */
+  button,
+  summary,
+  select,
+  [role='button'],
+  [role='checkbox'],
+  [role='radio'],
+  [role='switch'],
+  [role='tab'],
+  [role='option'],
+  [role='menuitem'],
+  [role='menuitemradio'],
+  [role='menuitemcheckbox'],
+  [role='combobox'],
+  [role='slider'],
+  label:has(input, button, [role='checkbox'], [role='radio']) {
+    cursor: pointer;
   }
+  :disabled,
+  [aria-disabled='true'],
+  [data-disabled]:not([data-disabled='false']) {
+    cursor: not-allowed;
+  }
+  /* Focus visible : anneau blanc de 2 px avec 2 px d'écart. */
   :focus-visible {
-    outline: 2px solid var(--ring);
+    outline: 2px solid var(--foreground);
     outline-offset: 2px;
   }
-  /* Barres de défilement et champs natifs suivent le thème. */
-  html.dark {
-    color-scheme: dark;
-  }
+}
+
+/* Grands nombres : poids 500, interlettrage serré. Le « % » est rendu à part, plus petit. */
+@utility num-tight {
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 /* Mobile (< 768 px) : cibles tactiles d'au moins 44 px et aucun raccourci clavier affiché. */

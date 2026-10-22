@@ -1,5 +1,5 @@
 import {
-  CATEGORIES, CATEGORY_WEIGHT, COUNTRIES, COUNTRY_HOTSPOTS, COUNTRY_PROFILE, STATUSES,
+  CATEGORIES, CATEGORY_WEIGHT, COUNTRIES, COUNTRY_HOTSPOTS, COUNTRY_PROFILE, REGULATIONS, STATUSES,
   type Country, type Requirement, type Risk,
 } from './types';
 
@@ -15,10 +15,6 @@ export function mulberry32(seed: number) {
   };
 }
 
-const REGULATIONS = [
-  'REACH', 'RoHS', 'DEEE', 'EN 14764', 'EN 15194', 'EN 12572', 'ISO 20957',
-  'CPSIA', 'Prop 65', 'GB 18401', 'UKCA', 'Loi AGEC', 'Étiquetage textile', 'CE Marking',
-];
 const SUBJECTS = [
   'Substances restreintes', 'Traçabilité des lots', 'Marquage et étiquetage',
   'Essais de résistance', 'Compatibilité électromagnétique', 'Documentation utilisateur',
@@ -78,7 +74,7 @@ export function generateRequirements(size: number, seed = 42, now = Date.UTC(202
       country,
       category: pickCategory(country),
       status,
-      risk: (1 + Math.floor(Math.min(0.999, Math.max(0, rand() + 0.3 * bias)) * 4)) as Risk,
+      risk: (1 + Math.floor(Math.min(0.999, Math.max(0, rand() + 0.3 * bias)) * 5)) as Risk,
       dueAt: now + Math.floor(rand() * 400 - 30) * DAY,
     };
   }

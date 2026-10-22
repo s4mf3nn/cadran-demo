@@ -1,12 +1,11 @@
 import { SparklesIcon } from '@hugeicons/core-free-icons';
 import type { AssistantApi } from '../hooks/useAssistant';
-import { COUNTRY_CODE } from '@/lib/labels';
+import { COUNTRY_CODE, RISK_LABEL } from '@/lib/labels';
 import { focusIn } from '../lib/focus';
 import { useFilters } from '../store/filters';
-import type { Requirement, Risk } from '../data/types';
+import type { Requirement } from '../data/types';
 import { RiskMeter } from './RiskMeter';
 import { StatusTag } from './StatusTag';
-import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
 import { Icon } from '@/components/ui/icon';
@@ -24,8 +23,6 @@ export function dueLabel(dueAt: number, now = Date.now()): string {
   return days > 0 ? `dans ${n} ${unit}` : `dépassée de ${n} ${unit}`;
 }
 
-const RISK_LABEL: Record<Risk, string> = { 1: 'Faible', 2: 'Modéré', 3: 'Élevé', 4: 'Critique' };
-
 function Header({ r, Title }: { r: Requirement; Title: typeof DialogTitle }) {
   return (
     <div className="flex flex-col gap-2">
@@ -40,14 +37,14 @@ function Header({ r, Title }: { r: Requirement; Title: typeof DialogTitle }) {
 
 function Signals({ r }: { r: Requirement }) {
   return (
-    <div className="grid grid-cols-2 divide-x divide-border rounded-lg border bg-muted/40">
+    <div className="grid grid-cols-2 divide-x divide-border rounded-lg border bg-surface">
       <div className="flex flex-col gap-1 p-3">
-        <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Échéance</span>
+        <span className="text-micro font-medium tracking-wide text-muted-foreground uppercase">Échéance</span>
         <span className="text-sm font-semibold">{dateFmt.format(r.dueAt)}</span>
         <span className="text-xs text-muted-foreground">{dueLabel(r.dueAt)}</span>
       </div>
       <div className="flex flex-col gap-1 p-3">
-        <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Risque</span>
+        <span className="text-micro font-medium tracking-wide text-muted-foreground uppercase">Risque</span>
         <RiskMeter risk={r.risk} />
         <span className="text-xs text-muted-foreground">{RISK_LABEL[r.risk]}</span>
       </div>
@@ -65,7 +62,7 @@ function Context({ r }: { r: Requirement }) {
     <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
       {rows.map(([label, value], i) => (
         <div key={label} className={cn('flex flex-col gap-0.5', i === 0 && 'col-span-2')}>
-          <dt className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">{label}</dt>
+          <dt className="text-micro font-medium tracking-wide text-muted-foreground uppercase">{label}</dt>
           <dd>{value}</dd>
         </div>
       ))}
@@ -100,10 +97,15 @@ export function RequirementDetail({ assistant, isMobile }: { assistant: Assistan
   };
 
   const action = (
-    <Button type="button" disabled={busy || !assistant.ready} onClick={ask} className="h-11 gap-2 md:h-9">
-      <Icon icon={SparklesIcon} size={16} />
+    <button
+      type="button"
+      disabled={busy || !assistant.ready}
+      onClick={ask}
+      className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-foreground px-5 text-body font-medium text-background hover:bg-foreground-soft disabled:bg-track disabled:text-muted"
+    >
+      <Icon icon={SparklesIcon} size={20} />
       Demander à l'assistant
-    </Button>
+    </button>
   );
 
   if (isMobile) {
@@ -112,7 +114,7 @@ export function RequirementDetail({ assistant, isMobile }: { assistant: Assistan
         <DrawerContent className="data-[vaul-drawer-direction=bottom]:max-h-[88dvh]">
           <DrawerDescription className="sr-only">Détail de l'exigence</DrawerDescription>
           {opened && <Body r={opened} Title={DrawerTitle as typeof DialogTitle} />}
-          <div className="mt-5 border-t p-4 [&>button]:w-full">{action}</div>
+          <div className="mt-5 p-4 [&>button]:w-full">{action}</div>
         </DrawerContent>
       </Drawer>
     );
@@ -123,7 +125,7 @@ export function RequirementDetail({ assistant, isMobile }: { assistant: Assistan
       <DialogContent>
         <DialogDescription className="sr-only">Détail de l'exigence</DialogDescription>
         <Body r={opened!} Title={DialogTitle} />
-        <div className="flex justify-end border-t pt-4">{action}</div>
+        <div className="flex justify-end pt-4">{action}</div>
       </DialogContent>
     </Dialog>
   );

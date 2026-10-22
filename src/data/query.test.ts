@@ -4,7 +4,7 @@ import { runQuery } from './query';
 import type { Filters, Sort } from './types';
 
 const data = generateRequirements(5_000, 1);
-const noFilter: Filters = { search: '', countries: [], categories: [], statuses: [], minRisk: 1 };
+const noFilter: Filters = { search: '', countries: [], categories: [], statuses: [], regulations: [], minRisk: 1, dueWithin: null };
 const byRef: Sort = { key: 'ref', dir: 'asc' };
 const NOW = Date.UTC(2026, 9, 1);
 
@@ -48,6 +48,50 @@ describe('runQuery', () => {
   it('recherche sans tenir compte de la casse', () => {
     const { indices } = runQuery(data, { ...noFilter, search: 'req-000042' }, byRef, NOW);
     expect(Array.from(indices, (i) => data[i]!.ref)).toEqual(['REQ-000042']);
+  });
+
+  it('ventile par risque (1 à 5) et par statut sans perte', () => {
+    const f: Filters = { ...noFilter, countries: ['France', 'Chine'] };
+    const { aggregates } = runQuery(data, f, byRef, NOW);
+    const sum = (o: Record<string, number>) => Object.values(o).reduce((a, b) => a + b, 0);
+    expect(Object.keys(aggregates.byRisk)).toEqual(['1', '2', '3', '4', '5']);
+    expect(sum(aggregates.byRisk)).toBe(aggregates.total);
+    expect(sum(aggregates.byStatus)).toBe(aggregates.total);
+  });
+
+  it('les volumes par statut du panneau ignorent le filtre de statut', () => {
+    const all = runQuery(data, noFilter, byRef, NOW).aggregates;
+    const nc = runQuery(data, { ...noFilter, statuses: ['non_conforme'] }, byRef, NOW).aggregates;
+    expect(nc.statusFacets).toEqual(all.byStatus);
+    expect(nc.total).toBe(all.byStatus.non_conforme);
+    expect(nc.byStatus.conforme).toBe(0);
+  });
+
+  it('compte les non conformes en retard et les échéances à moins de 90 jours', () => {
+    const { aggregates } = runQuery(data, noFilter, byRef, NOW);
+    const DAY = 86_400_000;
+    expect(aggregates.overdueNonConforme).toBe(data.filter((r) => r.status === 'non_conforme' && r.dueAt < NOW).length);
+    expect(aggregates.dueWithin90).toBe(data.filter((r) => r.dueAt >= NOW && r.dueAt < NOW + 90 * DAY).length);
+    expect(aggregates.overdueNonConforme).toBeGreaterThan(0);
+  });
+
+  it('en risque = non conforme ou risque >= 4', () => {
+    const { aggregates } = runQuery(data, noFilter, byRef, NOW);
+    expect(aggregates.atRisk).toBe(data.filter((r) => r.status === 'non_conforme' || r.risk >= 4).length);
+  });
+
+  it('filtre par réglementation et par fenêtre d’échéance (retards inclus)', () => {
+    const DAY = 86_400_000;
+    const { indices } = runQuery(data, { ...noFilter, regulations: ['REACH'], dueWithin: 30 }, byRef, NOW);
+    expect(indices.length).toBeGreaterThan(0);
+    let overdue = 0;
+    for (const i of indices) {
+      const r = data[i]!;
+      expect(r.regulation).toBe('REACH');
+      expect(r.dueAt).toBeLessThanOrEqual(NOW + 30 * DAY);
+      if (r.dueAt < NOW) overdue++;
+    }
+    expect(overdue).toBeGreaterThan(0);
   });
 
   it('trie par échéance décroissante de façon stable', () => {
