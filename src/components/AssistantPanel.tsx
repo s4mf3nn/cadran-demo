@@ -1,33 +1,36 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
-import { ArrowDown01Icon, ArrowUp01Icon, ArrowUp02Icon, Cancel01Icon, RefreshIcon, SparklesIcon, StopIcon } from '@hugeicons/core-free-icons';
+import { Fragment, useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
+import { ArrowUp02Icon, Cancel01Icon, RefreshIcon, SparklesIcon, StopCircleIcon } from '@hugeicons/core-free-icons';
 import { SUGGESTIONS, type AssistantApi, type Turn } from '../hooks/useAssistant';
-import { STATUS_LABEL } from '../data/types';
+import { COUNTRIES, type Aggregates } from '../data/types';
+import { filterChips, type FilterChip } from '../lib/labels';
 import { useFilters } from '../store/filters';
 import { useUi } from '../store/ui';
 import { RIGHT_PANEL_ID } from './layout/RightPanel';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { STATUS_DOT } from './StatusTag';
+import { SegmentBar } from './viz/DotGauge';
+import { nf, SEG_BG } from './viz/format';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
-import { Kbd } from '@/components/ui/kbd';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-
-const nf = new Intl.NumberFormat('fr-FR');
 
 /** Rendu minimal du **gras** sans dépendance markdown (et sans dangerouslySetInnerHTML). */
 function renderBold(text: string) {
-  return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) => (part.startsWith('**') && part.endsWith('**') ? <strong key={i}>{part.slice(2, -2)}</strong> : part));
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+    part.startsWith('**') && part.endsWith('**') ? <strong key={i} className="font-semibold text-foreground">{part.slice(2, -2)}</strong> : part,
+  );
 }
 
-const HEADER_BUTTON = 'grid size-11 shrink-0 place-items-center rounded-full text-muted hover:bg-surface hover:text-foreground disabled:opacity-40';
+const HEADER_BUTTON = 'grid size-10 shrink-0 place-items-center rounded-full text-foreground hover:bg-surface disabled:text-muted disabled:hover:bg-transparent';
 
 function HeaderButton({ icon, label, ...props }: { icon: typeof RefreshIcon; label: string } & React.ComponentProps<'button'>) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <button type="button" aria-label={label} className={HEADER_BUTTON} {...props}>
-          <Icon icon={icon} size={22} />
+          <Icon icon={icon} size={24} />
         </button>
       </TooltipTrigger>
       <TooltipContent side="bottom">{label}</TooltipContent>
@@ -39,7 +42,7 @@ function HeaderButton({ icon, label, ...props }: { icon: typeof RefreshIcon; lab
 function AssistantHeader({ onReset, resetDisabled, closable }: { onReset: () => void; resetDisabled: boolean; closable: boolean }) {
   const setPanel = useUi((s) => s.setPanel);
   return (
-    <div className="flex items-center gap-3 pr-3 pl-5 pt-5">
+    <div className="flex shrink-0 items-center gap-3 pt-5 pr-2.5 pl-5">
       <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-xl bg-surface text-foreground">
         <Icon icon={SparklesIcon} size={20} />
       </span>
@@ -47,79 +50,100 @@ function AssistantHeader({ onReset, resetDisabled, closable }: { onReset: () => 
         <h2 className="text-lg leading-6 font-semibold">Assistant</h2>
         <p className="truncate text-sm text-muted">Analyse la sélection en cours</p>
       </div>
-      <HeaderButton icon={RefreshIcon} label="Nouvelle conversation" onClick={onReset} disabled={resetDisabled} />
-      {closable && (
-        <HeaderButton icon={Cancel01Icon} label="Fermer l'assistant" aria-expanded aria-controls={RIGHT_PANEL_ID} onClick={() => setPanel('right', false)} />
-      )}
+      <div className="flex">
+        <HeaderButton icon={RefreshIcon} label="Nouvelle conversation" onClick={onReset} disabled={resetDisabled} />
+        {closable && (
+          <HeaderButton icon={Cancel01Icon} label="Fermer l'assistant" aria-expanded aria-controls={RIGHT_PANEL_ID} onClick={() => setPanel('right', false)} />
+        )}
+      </div>
     </div>
   );
 }
+
+const chipDot = (c: FilterChip) =>
+  c.kind === 'status' ? STATUS_DOT[c.status!] : c.kind === 'risk' ? SEG_BG[c.risk! - 1] : 'bg-muted';
 
 /** Puces qui rappellent la sélection courante, envoyée comme contexte à l'assistant. */
 function ContextChips({ total }: { total?: number }) {
   const f = useFilters((s) => s.filters);
-  const chips = [
-    total != null ? `${nf.format(total)} exigences` : null,
-    ...f.statuses.map((s) => STATUS_LABEL[s]),
-    f.minRisk > 1 ? `Risque ≥ ${f.minRisk}` : null,
-    ...f.categories,
-    ...f.countries,
-    f.search.trim() ? `« ${f.search.trim()} »` : null,
-  ].filter((c): c is string => c != null);
-
+  const chips = filterChips(f);
+  const all: FilterChip[] = total != null ? [{ label: `Toutes les exigences · ${nf.format(total)}`, kind: 'other' }] : [];
   return (
-    <div className="flex flex-col gap-1.5 px-4">
-      <h3 className="text-xs font-medium text-muted-foreground">Contexte</h3>
-      <ul className="flex flex-wrap gap-1.5">
-        {chips.map((c) => (
-          <li key={c} className="rounded-full bg-accent px-2.5 py-0.5 text-xs">
-            {c}
-          </li>
-        ))}
-      </ul>
+    <ul aria-label="Contexte de l'analyse" className="flex shrink-0 flex-wrap gap-2 px-5">
+      {(chips.length ? chips : all).map((c) => (
+        <li key={c.label} className="inline-flex h-8 items-center gap-2 rounded-full border-[1.5px] border-track px-3 text-sm text-foreground-soft">
+          <span aria-hidden="true" className={cn('size-1.5 rounded-full', chipDot(c))} />
+          {c.label}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Mini-cartes des pays cités dans la réponse : volume en risque et barre de 5 segments (au prorata du premier pays). */
+function CountryCards({ countries, aggregates }: { countries: string[]; aggregates: Aggregates }) {
+  const max = aggregates.byCountry[0]?.count ?? 0;
+  const cards = countries
+    .map((name) => aggregates.byCountry.find((c) => c.country === name))
+    .filter((c): c is Aggregates['byCountry'][number] => c != null)
+    .slice(0, 2);
+  if (!cards.length) return null;
+  return (
+    <ul aria-label="Pays cités" className="grid grid-cols-2 gap-2.5">
+      {cards.map((c) => (
+        <li key={c.country} className="flex flex-col gap-1 rounded-3xl border-2 border-card-border px-4 pt-3 pb-4">
+          <span className="truncate text-sm text-muted">{c.country}</span>
+          <span className="num-tight text-[28px]" aria-label={`${nf.format(c.count)} exigences en risque`}>{nf.format(c.count)}</span>
+          <SegmentBar value={max ? c.count / max : 0} className="mt-1.5" />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Pays de la liste cités dans le texte, dans leur ordre d'apparition. */
+function citedCountries(text: string): string[] {
+  return COUNTRIES.filter((c) => text.includes(c)).sort((a, b) => text.indexOf(a) - text.indexOf(b));
+}
+
+/** Réponse : paragraphes en --foreground-soft, chiffres clés en gras blanc, mini-cartes après le premier paragraphe qui cite des pays. */
+function Answer({ text, aggregates, caret }: { text: string; aggregates?: Aggregates; caret?: boolean }) {
+  const paragraphs = text.split(/\n\n+/);
+  const cardsAt = aggregates ? paragraphs.findIndex((p) => citedCountries(p).length > 0) : -1;
+  return (
+    <div className="flex flex-col gap-3.5 text-[15px] leading-relaxed text-foreground-soft">
+      {paragraphs.map((p, i) => (
+        <Fragment key={i}>
+          <p className="whitespace-pre-wrap">
+            {renderBold(p)}
+            {caret && i === paragraphs.length - 1 && <span aria-hidden="true" className="caret ml-1 inline-block h-[1.05em] w-[7px] translate-y-[0.18em] rounded-[1px] bg-foreground" />}
+          </p>
+          {i === cardsAt && aggregates && <CountryCards countries={citedCountries(p)} aggregates={aggregates} />}
+        </Fragment>
+      ))}
     </div>
   );
 }
 
-const SUGGESTIONS_KEY = 'cadran.assistant.suggestions';
-
-/** Suggestions visibles par défaut ; le choix est mémorisé (lecture/écriture protégées). */
-function useSuggestionsVisible() {
-  const [visible, setVisible] = useState(() => {
-    try {
-      return localStorage.getItem(SUGGESTIONS_KEY) !== 'hidden';
-    } catch {
-      return true;
-    }
-  });
-  const toggle = () =>
-    setVisible((v) => {
-      try {
-        localStorage.setItem(SUGGESTIONS_KEY, v ? 'hidden' : 'visible');
-      } catch {
-        // Pas de persistance possible : le choix vaut pour la session.
-      }
-      return !v;
-    });
-  return [visible, toggle] as const;
+function Question({ children }: { children: ReactNode }) {
+  return <div className="ml-10 self-end rounded-[22px_22px_6px_22px] bg-surface px-5 py-3.5 text-[15px] leading-relaxed">{children}</div>;
 }
 
 /** Échange passé : question + réponse figée, sans curseur ni squelette. */
 function PastTurn({ turn }: { turn: Turn }) {
   return (
     <>
-      <div className="self-end rounded-xl rounded-br-sm bg-primary px-3 py-2 text-primary-foreground text-sm">{turn.question || 'Analyser la sélection courante'}</div>
-      {turn.text && <div className="text-sm leading-relaxed whitespace-pre-wrap">{renderBold(turn.text)}</div>}
-      {turn.status === 'aborted' && <p className="text-xs text-muted-foreground">Génération interrompue.</p>}
-      {turn.status === 'error' && <p className="text-xs text-destructive">Erreur : {turn.error}</p>}
+      <Question>{turn.question || 'Analyser la sélection courante'}</Question>
+      {turn.text && <Answer text={turn.text} />}
+      {turn.status === 'aborted' && <p className="text-sm text-muted">Génération interrompue.</p>}
+      {turn.status === 'error' && <p className="text-sm text-destructive">Erreur : {turn.error}</p>}
     </>
   );
 }
 
-export function AssistantPanel({ assistant, total, closable = false }: { assistant: AssistantApi; total?: number; closable?: boolean }) {
+export function AssistantPanel({ assistant, total, aggregates, closable = false }: { assistant: AssistantApi; total?: number; aggregates?: Aggregates; closable?: boolean }) {
   const { status, text, error, question: asked, history, send, stop, reset, ready } = assistant;
   const [question, setQuestion] = useState('');
-  const [showSuggestions, toggleSuggestions] = useSuggestionsVisible();
   const scrollRef = useRef<HTMLDivElement>(null);
   const busy = status === 'thinking' || status === 'streaming';
 
@@ -168,36 +192,31 @@ export function AssistantPanel({ assistant, total, closable = false }: { assista
       <AssistantHeader onReset={reset} resetDisabled={busy || status === 'idle'} closable={closable} />
       <ContextChips total={total} />
 
-      {/* Conversation : annoncée en poli, et seulement une fois la génération terminée (aria-busy). */}
-      <div hidden={status === 'idle'} className="flex min-h-0 flex-1 flex-col gap-1.5 px-4">
-        <h3 className="sr-only">Discussion</h3>
-        <div ref={scrollRef} onScroll={onScroll} aria-live="polite" aria-busy={busy} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto rounded-xl border border-border p-3">
+      <div ref={scrollRef} onScroll={onScroll} className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 pt-2">
+        {/* Conversation : annoncée en poli, et seulement une fois la génération terminée (aria-busy). */}
+        <div hidden={status === 'idle'} aria-live="polite" aria-busy={busy} className="flex flex-col gap-4">
+          <h3 className="sr-only">Discussion</h3>
           {status !== 'idle' && (
             <>
               {history.map((t) => (
                 <PastTurn key={t.id} turn={t} />
               ))}
-              {history.length > 0 && <hr className="border-border" />}
-              <div className="self-end rounded-xl rounded-br-sm bg-primary px-3 py-2 text-primary-foreground text-sm">{asked || 'Analyser la sélection courante'}</div>
+              {history.length > 0 && <hr className="border-line" />}
+              <Question>{asked || 'Analyser la sélection courante'}</Question>
 
               {status === 'thinking' && (
                 <div className="space-y-2" role="status">
-                  <p className="text-sm text-muted-foreground">L'assistant analyse la sélection…</p>
+                  <p className="text-[15px] text-muted">L'assistant analyse la sélection…</p>
                   <div aria-hidden="true" className="space-y-2">
-                    <Skeleton className="h-3 w-3/4" />
-                    <Skeleton className="h-3 w-1/2" />
+                    <Skeleton className="h-3 w-3/4 rounded-full" />
+                    <Skeleton className="h-3 w-1/2 rounded-full" />
                   </div>
                 </div>
               )}
 
-              {text && (
-                <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {renderBold(text)}
-                  {status === 'streaming' && <span aria-hidden="true" className="caret ml-0.5 inline-block h-4 w-[2px] translate-y-0.5 bg-primary" />}
-                </div>
-              )}
+              {text && <Answer text={text} aggregates={aggregates} caret={status === 'streaming'} />}
 
-              {status === 'aborted' && <p className="text-xs text-muted-foreground">Génération interrompue.</p>}
+              {status === 'aborted' && <p className="text-sm text-muted">Génération interrompue.</p>}
               {status === 'error' && (
                 <Alert variant="destructive">
                   <AlertDescription className="flex items-center justify-between gap-2">
@@ -211,61 +230,63 @@ export function AssistantPanel({ assistant, total, closable = false }: { assista
             </>
           )}
         </div>
-      </div>
 
-      <div className={cn('mt-auto flex flex-col gap-3 px-4', status !== 'idle' && 'border-t border-border pt-3')}>
-        <div className="flex flex-col gap-1.5 max-md:hidden">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-medium text-muted-foreground">Suggestions</h3>
-            <Button type="button" variant="ghost" size="xs" aria-expanded={showSuggestions} aria-controls="assistant-suggestions" onClick={toggleSuggestions}>
-              {showSuggestions ? 'Masquer' : 'Afficher'}
-              <Icon icon={showSuggestions ? ArrowDown01Icon : ArrowUp01Icon} />
-            </Button>
-          </div>
-          <ol id="assistant-suggestions" hidden={!showSuggestions} aria-label="Suggestions" className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2.5 max-md:hidden">
+          <h3 id="assistant-suggestions-title" className="text-sm text-muted">Suggestions</h3>
+          <ol aria-labelledby="assistant-suggestions-title" className="flex flex-col gap-2">
             {SUGGESTIONS.map((s, i) => (
               <li key={s}>
                 <button
                   type="button"
                   disabled={busy || !ready}
                   onClick={() => send(s)}
-                  className="flex min-h-9 w-full items-center gap-2 rounded-lg border border-dashed border-input-strong bg-background px-2 py-1.5 text-left text-sm hover:bg-accent disabled:opacity-50"
+                  aria-keyshortcuts={String(i + 1)}
+                  className="flex min-h-[46px] w-full items-center gap-3 rounded-pill border-[1.5px] border-track px-5 py-2 text-left text-[15px] hover:bg-surface disabled:text-muted disabled:hover:bg-transparent"
                 >
-                  <Kbd aria-hidden="true">{i + 1}</Kbd>
                   <span className="flex-1">{s}</span>
+                  <span aria-hidden="true" className="text-[13px] text-muted tabular-nums">{i + 1}</span>
                 </button>
               </li>
             ))}
           </ol>
         </div>
+      </div>
 
-        <form onSubmit={onSubmit} className="flex flex-col gap-2 rounded-xl border border-input-strong bg-background p-2.5 focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+      <div className="flex shrink-0 flex-col items-center gap-3 px-5">
+        {busy && (
+          <button
+            type="button"
+            onClick={stop}
+            aria-keyshortcuts="Escape"
+            className="inline-flex h-10 items-center gap-2 rounded-full bg-surface px-4 text-[15px] hover:bg-track"
+          >
+            <Icon icon={StopCircleIcon} size={20} />
+            Arrêter
+            <span aria-hidden="true" className="text-muted">Échap</span>
+          </button>
+        )}
+
+        <form onSubmit={onSubmit} className="flex h-[58px] w-full items-center gap-2 rounded-full bg-surface pr-[9px] pl-6 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-foreground">
           <label htmlFor="assistant-input" className="sr-only">
             Question à l'assistant
           </label>
           <textarea
             id="assistant-input"
-            rows={2}
+            rows={1}
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Ex. : que dois-je prioriser ce trimestre ?"
-            className="w-full resize-none bg-transparent px-1 text-sm outline-none placeholder:text-muted-foreground"
+            placeholder="Demander à Cadran…"
+            className="h-6 flex-1 resize-none bg-transparent text-[15px] leading-6 outline-none placeholder:text-muted focus-visible:outline-none"
           />
-          <div className="flex items-center gap-2">
-            <span className="mr-auto flex items-center gap-1 text-xs text-muted-foreground max-md:hidden">
-              <Kbd aria-hidden="true">↵</Kbd> envoyer
-            </span>
-            <Button type="button" variant="outline" size="sm" disabled={!busy} onClick={stop} className={cn(!busy && 'opacity-60')}>
-              <Icon icon={StopIcon} />
-              Stop
-              <Kbd aria-hidden="true">Échap</Kbd>
-            </Button>
-            <Button type="submit" size="sm" disabled={!ready || busy}>
-              Analyser
-              <Icon icon={ArrowUp02Icon} />
-            </Button>
-          </div>
+          <button
+            type="submit"
+            disabled={!ready || busy}
+            aria-label="Envoyer"
+            className="grid size-10 shrink-0 place-items-center rounded-full bg-foreground text-background disabled:bg-track disabled:text-muted"
+          >
+            <Icon icon={ArrowUp02Icon} size={20} strokeWidth={2} />
+          </button>
         </form>
       </div>
     </div>

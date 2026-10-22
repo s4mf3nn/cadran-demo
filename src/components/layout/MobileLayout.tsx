@@ -87,7 +87,7 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
             <DrawerTitle className="sr-only">Assistant</DrawerTitle>
             <DrawerDescription className="sr-only">Poser une question sur la sélection courante</DrawerDescription>
           </DrawerHeader>
-          <AssistantPanel assistant={assistant} total={aggregates?.total} />
+          <AssistantPanel assistant={assistant} total={aggregates?.total} aggregates={aggregates} />
         </DrawerContent>
       </Drawer>
     </div>

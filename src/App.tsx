@@ -76,7 +76,7 @@ export default function App() {
         </div>
 
         <RightPanel>
-          <AssistantPanel assistant={assistant} total={aggregates?.total} closable />
+          <AssistantPanel assistant={assistant} total={aggregates?.total} aggregates={aggregates} closable />
         </RightPanel>
       </div>
       )}
