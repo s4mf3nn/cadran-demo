@@ -1,11 +1,9 @@
-import { useQueryClient } from '@tanstack/react-query';
-import { Download04Icon, Github01Icon, RefreshIcon, SparklesIcon } from '@hugeicons/core-free-icons';
+import { Download04Icon, Github01Icon, SparklesIcon } from '@hugeicons/core-free-icons';
 import { exportCsv } from '@/lib/exportCsv';
 import { focusIn } from '@/lib/focus';
 import { useUi } from '@/store/ui';
 import type { Requirement } from '@/data/types';
 import { Icon } from '@/components/ui/icon';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { nf } from '../viz/format';
 import { RIGHT_PANEL_ID } from './RightPanel';
 
@@ -28,7 +26,6 @@ export function TimingsText({ datasetSize, timings, isRefreshing }: { datasetSiz
 export function AppHeader({ rows, datasetSize, timings, isRefreshing }: { rows: Requirement[]; datasetSize?: number; timings: Timings; isRefreshing: boolean }) {
   const rightOpen = useUi((s) => s.rightOpen);
   const setPanel = useUi((s) => s.setPanel);
-  const queryClient = useQueryClient();
 
   return (
     <header className="flex h-[76px] shrink-0 items-center justify-between gap-4 pl-1">
@@ -64,19 +61,6 @@ export function AppHeader({ rows, datasetSize, timings, isRefreshing }: { rows: 
             Assistant
           </button>
         )}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-label="Actualiser"
-              onClick={() => queryClient.invalidateQueries({ queryKey: ['query'] })}
-              className="grid size-11 place-items-center rounded-full hover:bg-surface"
-            >
-              <Icon icon={RefreshIcon} size={26} />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">Actualiser</TooltipContent>
-        </Tooltip>
       </div>
     </header>
   );
