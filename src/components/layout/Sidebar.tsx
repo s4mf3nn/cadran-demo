@@ -28,12 +28,12 @@ function IconButton({ icon, label, onClick, side = 'right', ...props }: { icon: 
   );
 }
 
-/** Losange de 18 px en dégradé conique (rose, corail, ambre, cyan, violet). */
+/** Losange de 28 px en dégradé conique (rose, corail, ambre, cyan, violet). */
 export function Logo() {
   return (
     <span
       aria-hidden="true"
-      className="block size-[13px] shrink-0 rotate-45 rounded-[4px]"
+      className="block size-5 shrink-0 rotate-45 rounded-[6px]"
       style={{ background: 'conic-gradient(from 200deg, #ff4f9a, #ff7a59, #ffb547, #3fd5e6, #8b6cff, #ff4f9a)' }}
     />
   );
@@ -41,9 +41,9 @@ export function Logo() {
 
 export function Brand() {
   return (
-    <div className="flex items-center gap-2.5">
-      <span className="grid size-[18px] place-items-center"><Logo /></span>
-      <span className="text-lg font-semibold">cadran</span>
+    <div className="flex items-center gap-3">
+      <span className="grid size-7 place-items-center"><Logo /></span>
+      <span className="text-xl font-semibold tracking-[-0.01em]">Cadran</span>
     </div>
   );
 }
