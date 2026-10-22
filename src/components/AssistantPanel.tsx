@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
-import { ArrowUp02Icon, Cancel01Icon, RefreshIcon, SparklesIcon, StopCircleIcon } from '@hugeicons/core-free-icons';
+import { ArrowDown01Icon, ArrowUp01Icon, ArrowUp02Icon, Cancel01Icon, RefreshIcon, SparklesIcon, StopCircleIcon } from '@hugeicons/core-free-icons';
 import { SUGGESTIONS, type AssistantApi, type Turn } from '../hooks/useAssistant';
 import { COUNTRIES, type Aggregates } from '../data/types';
 import { filterChips, type FilterChip } from '../lib/labels';
@@ -38,8 +38,8 @@ function HeaderButton({ icon, label, ...props }: { icon: typeof RefreshIcon; lab
   );
 }
 
-/** En-tête : tuile Sparkles, titre et sous-titre, puis Nouvelle conversation (et Fermer sur desktop). */
-function AssistantHeader({ onReset, resetDisabled, closable }: { onReset: () => void; resetDisabled: boolean; closable: boolean }) {
+/** En-tête : tuile Sparkles, titre et sous-titre (et Fermer sur desktop). */
+function AssistantHeader({ closable }: { closable: boolean }) {
   const setPanel = useUi((s) => s.setPanel);
   return (
     <div className="flex shrink-0 items-center gap-3 pt-5 pr-2.5 pl-5">
@@ -50,14 +50,36 @@ function AssistantHeader({ onReset, resetDisabled, closable }: { onReset: () => 
         <h2 className="text-lg leading-6 font-semibold">Assistant</h2>
         <p className="truncate text-sm text-muted">Analyse la sélection en cours</p>
       </div>
-      <div className="flex">
-        <HeaderButton icon={RefreshIcon} label="Nouvelle conversation" onClick={onReset} disabled={resetDisabled} />
-        {closable && (
-          <HeaderButton icon={Cancel01Icon} label="Fermer l'assistant" aria-expanded aria-controls={RIGHT_PANEL_ID} onClick={() => setPanel('right', false)} />
-        )}
-      </div>
+      {closable && (
+        <HeaderButton icon={Cancel01Icon} label="Fermer l'assistant" aria-expanded aria-controls={RIGHT_PANEL_ID} onClick={() => setPanel('right', false)} />
+      )}
     </div>
   );
+}
+
+const BOTTOM_BUTTON = 'inline-flex h-10 items-center gap-2 rounded-full bg-surface px-4 text-body hover:bg-track';
+
+const SUGGESTIONS_KEY = 'cadran.assistant.suggestions';
+
+/** Suggestions visibles par défaut ; le choix est mémorisé (lecture/écriture protégées). */
+function useSuggestionsVisible() {
+  const [visible, setVisible] = useState(() => {
+    try {
+      return localStorage.getItem(SUGGESTIONS_KEY) !== 'hidden';
+    } catch {
+      return true;
+    }
+  });
+  const toggle = () =>
+    setVisible((v) => {
+      try {
+        localStorage.setItem(SUGGESTIONS_KEY, v ? 'hidden' : 'visible');
+      } catch {
+        // Pas de persistance possible : le choix vaut pour la session.
+      }
+      return !v;
+    });
+  return [visible, toggle] as const;
 }
 
 const chipDot = (c: FilterChip) =>
@@ -144,6 +166,7 @@ function PastTurn({ turn }: { turn: Turn }) {
 export function AssistantPanel({ assistant, total, aggregates, closable = false }: { assistant: AssistantApi; total?: number; aggregates?: Aggregates; closable?: boolean }) {
   const { status, text, error, question: asked, history, send, stop, reset, ready } = assistant;
   const [question, setQuestion] = useState('');
+  const [showSuggestions, toggleSuggestions] = useSuggestionsVisible();
   const scrollRef = useRef<HTMLDivElement>(null);
   const busy = status === 'thinking' || status === 'streaming';
 
@@ -189,7 +212,7 @@ export function AssistantPanel({ assistant, total, aggregates, closable = false 
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 pb-4">
-      <AssistantHeader onReset={reset} resetDisabled={busy || status === 'idle'} closable={closable} />
+      <AssistantHeader closable={closable} />
       <ContextChips total={total} />
 
       <div ref={scrollRef} onScroll={onScroll} className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 pt-2">
@@ -232,8 +255,20 @@ export function AssistantPanel({ assistant, total, aggregates, closable = false 
         </div>
 
         <div className="flex flex-col gap-2.5 max-md:hidden">
-          <h3 id="assistant-suggestions-title" className="text-sm text-muted">Suggestions</h3>
-          <ol aria-labelledby="assistant-suggestions-title" className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <h3 id="assistant-suggestions-title" className="text-sm text-muted">Suggestions</h3>
+            <button
+              type="button"
+              aria-expanded={showSuggestions}
+              aria-controls="assistant-suggestions"
+              onClick={toggleSuggestions}
+              className="-mr-3 inline-flex h-8 items-center gap-1 rounded-full px-3 text-sm text-muted hover:bg-surface hover:text-foreground"
+            >
+              {showSuggestions ? 'Masquer' : 'Afficher'}
+              <Icon icon={showSuggestions ? ArrowDown01Icon : ArrowUp01Icon} size={16} />
+            </button>
+          </div>
+          <ol id="assistant-suggestions" hidden={!showSuggestions} aria-labelledby="assistant-suggestions-title" className="flex flex-col gap-2">
             {SUGGESTIONS.map((s, i) => (
               <li key={s}>
                 <button
@@ -253,20 +288,23 @@ export function AssistantPanel({ assistant, total, aggregates, closable = false 
       </div>
 
       <div className="flex shrink-0 flex-col items-center gap-3 px-5">
-        {busy && (
-          <button
-            type="button"
-            onClick={stop}
-            aria-keyshortcuts="Escape"
-            className="inline-flex h-10 items-center gap-2 rounded-full bg-surface px-4 text-body hover:bg-track"
-          >
+        {/* Même emplacement : Arrêter pendant la génération, Nouvelle conversation une fois l'échange terminé. */}
+        {busy ? (
+          <button type="button" onClick={stop} aria-keyshortcuts="Escape" className={BOTTOM_BUTTON}>
             <Icon icon={StopCircleIcon} size={20} />
             Arrêter
             <span aria-hidden="true" className="text-muted">Échap</span>
           </button>
+        ) : (
+          status !== 'idle' && (
+            <button type="button" onClick={reset} className={BOTTOM_BUTTON}>
+              <Icon icon={RefreshIcon} size={20} />
+              Nouvelle conversation
+            </button>
+          )
         )}
 
-        <form onSubmit={onSubmit} className="flex h-[58px] w-full items-center gap-2 rounded-full bg-surface pr-[9px] pl-6 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-foreground">
+        <form onSubmit={onSubmit} className="flex h-[58px] w-full items-center gap-2 rounded-full bg-surface pr-[9px] pl-6">
           <label htmlFor="assistant-input" className="sr-only">
             Question à l'assistant
           </label>
