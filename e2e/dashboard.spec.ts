@@ -119,6 +119,21 @@ test('carte : un groupe se sépare au zoom, un pays filtre', async ({ page }) =>
   await expect(map).toContainText('1 pays');
 });
 
+test('« Trié par … » ouvre le menu de tri comme sur mobile', async ({ page }) => {
+  const trigger = page.getByRole('button', { name: /^Trié par échéance/ });
+  await trigger.click();
+  await page.getByRole('menuitemradio', { name: 'Pays' }).click();
+  const country = page.getByRole('columnheader', { name: 'Pays' });
+  await expect(country).toHaveAttribute('aria-sort', 'ascending');
+  await expect(page.getByRole('button', { name: /^Trié par pays/ })).toContainText('↑');
+  // Choisir à nouveau le tri actif inverse le sens, sans fermer le menu.
+  await page.getByRole('button', { name: /^Trié par pays/ }).click();
+  await page.getByRole('menuitemradio', { name: 'Pays' }).click();
+  await expect(page.getByRole('menu')).toContainText('décroissant');
+  await page.keyboard.press('Escape');
+  await expect(country).toHaveAttribute('aria-sort', 'descending');
+});
+
 test('aucune violation axe WCAG 2 AA (desktop)', async ({ page }) => {
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
   expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).slice(0, 3).join(' | ')}`)).toEqual([]);

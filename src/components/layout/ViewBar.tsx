@@ -8,19 +8,16 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Icon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
+import type { ReactNode } from 'react';
 
-export function SortButton({ className }: { className?: string }) {
+/** Menu de tri partagé (mobile et bureau) : choisir la colonne active inverse le sens sans fermer le menu. */
+export function SortMenu({ children, align = 'start' }: { children: ReactNode; align?: 'start' | 'end' }) {
   const sort = useFilters((s) => s.sort);
   const setSort = useFilters((s) => s.setSort);
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button type="button" variant="outline" size="sm" className={cn('h-11 rounded-full border-[1.5px] border-track bg-transparent px-4 text-body', className)}>
-          <Icon icon={ArrowUpDownIcon} />
-          Trier
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
+      <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
+      <DropdownMenuContent align={align}>
         <DropdownMenuLabel>Trier par ({sort.dir === 'asc' ? 'croissant' : 'décroissant'})</DropdownMenuLabel>
         <DropdownMenuRadioGroup value={sort.key} onValueChange={(v) => setSort(v as SortKey)}>
           {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
@@ -32,5 +29,16 @@ export function SortButton({ className }: { className?: string }) {
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+export function SortButton({ className }: { className?: string }) {
+  return (
+    <SortMenu>
+      <Button type="button" variant="outline" size="sm" className={cn('h-11 rounded-full border-[1.5px] border-track bg-transparent px-4 text-body', className)}>
+        <Icon icon={ArrowUpDownIcon} />
+        Trier
+      </Button>
+    </SortMenu>
   );
 }

@@ -29,9 +29,9 @@ describe('RequirementsTable', () => {
     render(<RequirementsTable rows={generateRequirements(50)} />);
     const header = screen.getByRole('columnheader', { name: /risque/i });
     expect(header).toHaveAttribute('aria-sort', 'none');
-    await userEvent.click(screen.getByRole('button', { name: /risque/i }));
+    await userEvent.click(screen.getByRole('button', { name: /^risque$/i }));
     expect(header).toHaveAttribute('aria-sort', 'ascending');
-    await userEvent.click(screen.getByRole('button', { name: /risque/i }));
+    await userEvent.click(screen.getByRole('button', { name: /^risque$/i }));
     expect(header).toHaveAttribute('aria-sort', 'descending');
   });
 

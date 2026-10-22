@@ -8,6 +8,7 @@ import type { Aggregates, Requirement, SortKey } from '../data/types';
 import { useFilters } from '../store/filters';
 import { RiskMeter } from './RiskMeter';
 import { StatusTag } from './StatusTag';
+import { SortMenu } from './layout/ViewBar';
 
 const COLUMNS: { key: SortKey; label: string; width: string }[] = [
   { key: 'ref', label: 'Référence', width: '8.75rem' },
@@ -92,9 +93,15 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
           {nf.format(rows.length)} · {filterSummary(filters)}
           {aggregates && <span className="sr-only"> · {nf.format(aggregates.byStatus.non_conforme)} non conformes · {nf.format(aggregates.atRisk)} en risque</span>}
         </p>
-        <p className="shrink-0 text-sm text-muted">
-          Trié par {SORT_LABEL[sort.key].toLowerCase()} {sort.dir === 'asc' ? '↑' : '↓'}
-        </p>
+        <SortMenu align="end">
+          <button
+            type="button"
+            aria-label={`Trié par ${SORT_LABEL[sort.key].toLowerCase()}, ordre ${sort.dir === 'asc' ? 'croissant' : 'décroissant'} : changer le tri`}
+            className="-mr-2 shrink-0 rounded-full px-2 py-1 text-sm text-muted hover:bg-surface hover:text-foreground data-[state=open]:bg-surface data-[state=open]:text-foreground"
+          >
+            Trié par {SORT_LABEL[sort.key].toLowerCase()} {sort.dir === 'asc' ? '↑' : '↓'}
+          </button>
+        </SortMenu>
       </div>
 
       <div
