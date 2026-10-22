@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
-import { ArrowDown01Icon, ArrowUp01Icon, ArrowUp02Icon, StopIcon } from '@hugeicons/core-free-icons';
+import { ArrowDown01Icon, ArrowUp01Icon, ArrowUp02Icon, Cancel01Icon, RefreshIcon, SparklesIcon, StopIcon } from '@hugeicons/core-free-icons';
 import { SUGGESTIONS, type AssistantApi, type Turn } from '../hooks/useAssistant';
 import { STATUS_LABEL } from '../data/types';
 import { useFilters } from '../store/filters';
+import { useUi } from '../store/ui';
+import { RIGHT_PANEL_ID } from './layout/RightPanel';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -15,6 +18,41 @@ const nf = new Intl.NumberFormat('fr-FR');
 /** Rendu minimal du **gras** sans dépendance markdown (et sans dangerouslySetInnerHTML). */
 function renderBold(text: string) {
   return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) => (part.startsWith('**') && part.endsWith('**') ? <strong key={i}>{part.slice(2, -2)}</strong> : part));
+}
+
+const HEADER_BUTTON = 'grid size-11 shrink-0 place-items-center rounded-full text-muted hover:bg-surface hover:text-foreground disabled:opacity-40';
+
+function HeaderButton({ icon, label, ...props }: { icon: typeof RefreshIcon; label: string } & React.ComponentProps<'button'>) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button type="button" aria-label={label} className={HEADER_BUTTON} {...props}>
+          <Icon icon={icon} size={22} />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+/** En-tête : tuile Sparkles, titre et sous-titre, puis Nouvelle conversation (et Fermer sur desktop). */
+function AssistantHeader({ onReset, resetDisabled, closable }: { onReset: () => void; resetDisabled: boolean; closable: boolean }) {
+  const setPanel = useUi((s) => s.setPanel);
+  return (
+    <div className="flex items-center gap-3 pr-3 pl-5 pt-5">
+      <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-xl bg-surface text-foreground">
+        <Icon icon={SparklesIcon} size={20} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <h2 className="text-lg leading-6 font-semibold">Assistant</h2>
+        <p className="truncate text-sm text-muted">Analyse la sélection en cours</p>
+      </div>
+      <HeaderButton icon={RefreshIcon} label="Nouvelle conversation" onClick={onReset} disabled={resetDisabled} />
+      {closable && (
+        <HeaderButton icon={Cancel01Icon} label="Fermer l'assistant" aria-expanded aria-controls={RIGHT_PANEL_ID} onClick={() => setPanel('right', false)} />
+      )}
+    </div>
+  );
 }
 
 /** Puces qui rappellent la sélection courante, envoyée comme contexte à l'assistant. */
@@ -78,7 +116,7 @@ function PastTurn({ turn }: { turn: Turn }) {
   );
 }
 
-export function AssistantPanel({ assistant, total }: { assistant: AssistantApi; total?: number }) {
+export function AssistantPanel({ assistant, total, closable = false }: { assistant: AssistantApi; total?: number; closable?: boolean }) {
   const { status, text, error, question: asked, history, send, stop, reset, ready } = assistant;
   const [question, setQuestion] = useState('');
   const [showSuggestions, toggleSuggestions] = useSuggestionsVisible();
@@ -126,17 +164,13 @@ export function AssistantPanel({ assistant, total }: { assistant: AssistantApi; 
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 py-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 pb-4">
+      <AssistantHeader onReset={reset} resetDisabled={busy || status === 'idle'} closable={closable} />
       <ContextChips total={total} />
 
       {/* Conversation : annoncée en poli, et seulement une fois la génération terminée (aria-busy). */}
       <div hidden={status === 'idle'} className="flex min-h-0 flex-1 flex-col gap-1.5 px-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-medium text-muted-foreground">Discussion</h3>
-          <Button type="button" variant="ghost" size="xs" disabled={busy} onClick={reset}>
-            Nouvelle conversation
-          </Button>
-        </div>
+        <h3 className="sr-only">Discussion</h3>
         <div ref={scrollRef} onScroll={onScroll} aria-live="polite" aria-busy={busy} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto rounded-xl border border-border p-3">
           {status !== 'idle' && (
             <>

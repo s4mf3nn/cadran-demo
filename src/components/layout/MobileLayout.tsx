@@ -11,7 +11,6 @@ import { RequirementsList } from '../RequirementsList';
 import { StatusBar } from '../StatusBar';
 import { Brand, SidebarBody } from './Sidebar';
 import { SortButton } from './ViewBar';
-import { AssistantHeader } from './RightPanel';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Icon } from '@/components/ui/icon';
@@ -96,7 +95,7 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
       <Drawer open={rightDrawer} onOpenChange={(o) => setDrawer('right', o)}>
         <DrawerContent className="h-[88dvh] data-[vaul-drawer-direction=bottom]:max-h-[88dvh]">
           <DrawerHeader className="text-left">
-            <DrawerTitle asChild><AssistantHeader /></DrawerTitle>
+            <DrawerTitle className="sr-only">Assistant</DrawerTitle>
             <DrawerDescription className="sr-only">Poser une question sur la sélection courante</DrawerDescription>
           </DrawerHeader>
           <AssistantPanel assistant={assistant} total={aggregates?.total} />

@@ -54,15 +54,15 @@ export default function App() {
       {isMobile ? (
         <MobileLayout rows={rows} aggregates={aggregates} isLoading={isLoading} isRefreshing={isRefreshing} assistant={assistant} />
       ) : (
-      <div className="flex h-screen bg-background text-foreground">
+      <div className="flex h-screen gap-3.5 bg-background p-4 text-foreground">
         <Sidebar>
           <FilterPanel aggregates={aggregates} />
         </Sidebar>
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col gap-3.5">
           <AppHeader rows={rows} timings={timings} isRefreshing={isRefreshing} />
 
-          <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-6 *:shrink-0">
+          <main className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto *:shrink-0">
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>Erreur : {String(error)}</AlertDescription>
@@ -93,7 +93,7 @@ export default function App() {
         </div>
 
         <RightPanel>
-          <AssistantPanel assistant={assistant} total={aggregates?.total} />
+          <AssistantPanel assistant={assistant} total={aggregates?.total} closable />
         </RightPanel>
       </div>
       )}

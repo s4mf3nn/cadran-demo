@@ -4,9 +4,9 @@ type Side = 'left' | 'right';
 
 const key = (side: Side) => `cadran.panel.${side}`;
 
-/** Lecture protégée. Filtres ouverts par défaut ; assistant flottant fermé par défaut (il recouvre le tableau de bord). */
+/** Lecture protégée. Les deux panneaux sont ouverts par défaut (assistant docké à droite). */
 function readOpen(side: Side): boolean {
-  const fallback = side === 'left';
+  const fallback = true;
   try {
     const v = localStorage.getItem(key(side));
     return v === null ? fallback : v === 'open';
