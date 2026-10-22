@@ -84,7 +84,7 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
     <section aria-labelledby="requirements-title" className="flex h-full min-h-0 flex-col overflow-hidden rounded-card border-2 border-card-border bg-background">
       <div className="flex shrink-0 items-center gap-3 px-6 pt-4 pb-2">
         <Icon icon={Layers01Icon} size={22} className="text-muted" />
-        <h2 id="requirements-title" className="text-[17px] font-medium">Exigences</h2>
+        <h2 id="requirements-title" className="text-title font-medium">Exigences</h2>
         <p className="min-w-0 flex-1 truncate text-sm text-muted">
           {nf.format(rows.length)} · {filterSummary(filters)}
           {aggregates && <span className="sr-only"> · {nf.format(aggregates.byStatus.non_conforme)} non conformes · {nf.format(aggregates.atRisk)} en risque</span>}
@@ -102,7 +102,7 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
         tabIndex={0}
         onKeyDown={onKeyDown}
         ref={parentRef}
-        className="group/grid relative min-h-0 flex-1 overflow-auto px-3 pb-3 text-[15px] outline-none"
+        className="group/grid relative min-h-0 flex-1 overflow-auto px-3 pb-3 text-body outline-none"
       >
         <div role="row" aria-rowindex={1} className={cn('sticky top-0 z-10 grid bg-background', MIN_WIDTH)} style={{ gridTemplateColumns: GRID, height: HEADER_HEIGHT }}>
           {COLUMNS.map((c) => {
@@ -117,7 +117,7 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
                 <button
                   type="button"
                   onClick={() => setSort(c.key)}
-                  className={cn('flex h-full w-full items-center gap-1 rounded-lg px-3 text-left text-[13px] hover:text-foreground', isSorted ? 'text-foreground-soft' : 'text-muted')}
+                  className={cn('flex h-full w-full items-center gap-1 rounded-lg px-3 text-left text-caption hover:text-foreground', isSorted ? 'text-foreground-soft' : 'text-muted')}
                 >
                   {c.label}
                   {isSorted && <Icon icon={sort.dir === 'asc' ? ArrowUp01Icon : ArrowDown01Icon} size={14} />}
@@ -125,7 +125,7 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
               </div>
             );
           })}
-          <div role="columnheader" className="flex items-center px-3 text-[13px] text-muted">Intitulé</div>
+          <div role="columnheader" className="flex items-center px-3 text-caption text-muted">Intitulé</div>
         </div>
 
         {rows.length === 0 ? (

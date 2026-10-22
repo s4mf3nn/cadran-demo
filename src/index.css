@@ -32,6 +32,17 @@
   --font-sans: -apple-system, 'SF Pro Text', 'Inter Variable', system-ui, sans-serif;
   --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
 
+  /* Échelle typographique : à régler ici, pas dans les composants. */
+  --text-display: 26px;
+  --text-stat: 24px;
+  --text-title: 15px;
+  --text-body: 13px;
+  --text-caption: 11.5px;
+  --text-micro: 10px;
+  --text-xs: 11px;
+  --text-sm: 12.5px;
+  --text-base: 14px;
+
   /* Tokens du design */
   --color-background: var(--background);
   --color-card-border: var(--card-border);

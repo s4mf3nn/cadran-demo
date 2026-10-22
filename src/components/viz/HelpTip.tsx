@@ -16,7 +16,7 @@ export function HelpTip({ label, text, className }: { label: string; text: strin
           <Icon icon={HelpCircleIcon} size={20} />
         </button>
       </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-64 text-[13px] leading-snug">{text}</TooltipContent>
+      <TooltipContent side="top" className="max-w-64 text-caption leading-snug">{text}</TooltipContent>
     </Tooltip>
   );
 }

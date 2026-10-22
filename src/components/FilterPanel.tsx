@@ -16,7 +16,7 @@ import { Icon } from '@/components/ui/icon';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
-const LABEL = 'text-[15px] text-muted';
+const LABEL = 'text-body text-muted';
 
 /** Liste déroulante multi-choix (Popover + Command) présentée en ligne de 50 px : libellé, valeur, chevron. */
 function SelectRow<T extends string>({ id, label, all, options, selected, onToggle, placeholder, empty }: {
@@ -43,7 +43,7 @@ function SelectRow<T extends string>({ id, label, all, options, selected, onTogg
           className="flex h-[50px] w-full items-center gap-3 border-b border-line text-left"
         >
           <span className={cn(LABEL, 'flex-1')}>{label}</span>
-          <span className="max-w-32 truncate text-[15px]">{value}</span>
+          <span className="max-w-32 truncate text-body">{value}</span>
           <Icon icon={ArrowDown01Icon} size={16} className="text-muted" />
         </button>
       </PopoverTrigger>
@@ -75,7 +75,7 @@ function RiskSelector() {
     <div className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between">
         <span id="filter-risk-label" className={LABEL}>Risque minimum</span>
-        <span className="text-[15px]">{riskValueLabel(minRisk)}</span>
+        <span className="text-body">{riskValueLabel(minRisk)}</span>
       </div>
       <RadioGroupPrimitive.Root
         id="filter-risk"
@@ -97,7 +97,7 @@ function RiskSelector() {
             value={String(r)}
             aria-label={`${riskValueLabel(r)} (${RISK_LABEL[r]})`}
             className={cn(
-              'relative z-10 grid size-(--knob) place-items-center justify-self-center rounded-full text-[15px] tabular-nums',
+              'relative z-10 grid size-(--knob) place-items-center justify-self-center rounded-full text-body tabular-nums',
               r < minRisk ? 'text-muted hover:text-foreground' : 'text-foreground',
               'data-[state=checked]:bg-foreground data-[state=checked]:font-bold data-[state=checked]:text-background',
             )}
@@ -110,7 +110,7 @@ function RiskSelector() {
         {RISKS.map((r) => (
           <li key={r} className="flex flex-col items-center gap-1.5">
             <span className={cn('h-1 w-full rounded-full', r >= minRisk ? SEG_BG[r - 1] : 'bg-track')} />
-            <span className={cn('text-[11.5px]', r >= minRisk ? 'text-foreground-soft' : 'text-muted')}>{RISK_LABEL[r]}</span>
+            <span className={cn('text-micro', r >= minRisk ? 'text-foreground-soft' : 'text-muted')}>{RISK_LABEL[r]}</span>
           </li>
         ))}
       </ul>
@@ -150,12 +150,12 @@ export function FilterPanel({ aggregates }: { aggregates?: Aggregates }) {
             id="filter-search"
             onClick={openSearch}
             aria-label={filters.search ? `Rechercher (filtre actif : ${filters.search})` : 'Rechercher une exigence'}
-            className="flex h-[46px] w-full items-center gap-2.5 rounded-full bg-surface pr-3 pl-4 text-left text-[15px]"
+            className="flex h-[46px] w-full items-center gap-2.5 rounded-full bg-surface pr-3 pl-4 text-left text-body"
           >
             <Icon icon={Search01Icon} size={18} className="text-muted" />
             <span className={cn('flex-1 truncate', !filters.search && 'text-muted')}>{filters.search || 'Rechercher'}</span>
             {!filters.search && (
-              <kbd aria-hidden="true" className="grid h-5 min-w-5 place-items-center rounded-[5px] border border-track text-[11px] text-muted">/</kbd>
+              <kbd aria-hidden="true" className="grid h-5 min-w-5 place-items-center rounded-[5px] border border-track text-micro text-muted">/</kbd>
             )}
           </button>
           {filters.search && (
@@ -186,13 +186,13 @@ export function FilterPanel({ aggregates }: { aggregates?: Aggregates }) {
                   aria-pressed={pressed}
                   onClick={() => toggle('statuses', s)}
                   className={cn(
-                    'flex h-11 items-center gap-3 rounded-pill border-[1.5px] px-4 text-left text-[15px]',
+                    'flex h-11 items-center gap-3 rounded-pill border-[1.5px] px-4 text-left text-body',
                     pressed ? 'border-foreground bg-foreground text-background' : 'border-track hover:bg-surface',
                   )}
                 >
                   <StatusDot status={s} />
                   <span className="flex-1">{STATUS_LABEL[s]}</span>
-                  <span className={cn('text-[13px] tabular-nums', pressed ? 'text-[#636366]' : 'text-muted')}>
+                  <span className={cn('text-caption tabular-nums', pressed ? 'text-[#636366]' : 'text-muted')}>
                     {facets ? nf.format(facets[s]) : ''}
                   </span>
                 </button>
@@ -216,7 +216,7 @@ export function FilterPanel({ aggregates }: { aggregates?: Aggregates }) {
                   aria-label={o.name}
                   onClick={() => setDueWithin(o.value)}
                   className={cn(
-                    'h-[42px] rounded-full px-4 text-[15px]',
+                    'h-[42px] rounded-full px-4 text-body',
                     pressed ? 'bg-surface text-foreground' : 'text-foreground-soft hover:bg-surface/60',
                   )}
                 >

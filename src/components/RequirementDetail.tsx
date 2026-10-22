@@ -40,12 +40,12 @@ function Signals({ r }: { r: Requirement }) {
   return (
     <div className="grid grid-cols-2 divide-x divide-border rounded-lg border bg-surface">
       <div className="flex flex-col gap-1 p-3">
-        <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Échéance</span>
+        <span className="text-micro font-medium tracking-wide text-muted-foreground uppercase">Échéance</span>
         <span className="text-sm font-semibold">{dateFmt.format(r.dueAt)}</span>
         <span className="text-xs text-muted-foreground">{dueLabel(r.dueAt)}</span>
       </div>
       <div className="flex flex-col gap-1 p-3">
-        <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Risque</span>
+        <span className="text-micro font-medium tracking-wide text-muted-foreground uppercase">Risque</span>
         <RiskMeter risk={r.risk} />
         <span className="text-xs text-muted-foreground">{RISK_LABEL[r.risk]}</span>
       </div>
@@ -63,7 +63,7 @@ function Context({ r }: { r: Requirement }) {
     <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
       {rows.map(([label, value], i) => (
         <div key={label} className={cn('flex flex-col gap-0.5', i === 0 && 'col-span-2')}>
-          <dt className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">{label}</dt>
+          <dt className="text-micro font-medium tracking-wide text-muted-foreground uppercase">{label}</dt>
           <dd>{value}</dd>
         </div>
       ))}

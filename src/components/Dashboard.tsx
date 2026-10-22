@@ -26,7 +26,7 @@ export function GaugeRow({ a, className }: { a: Aggregates; className?: string }
         <li key={g.title} className={cn(CARD, 'relative flex flex-col items-center justify-center gap-2.5 px-2 pt-2')}>
           <HelpTip label={g.title} text={g.help} className="absolute top-2.5 right-2.5" />
           <SegmentedGauge value={g.value} label={g.title} reversed={g.reversed} />
-          <h3 className="text-center text-[15px] leading-5 font-semibold">{g.title}</h3>
+          <h3 className="text-center text-body leading-5 font-semibold">{g.title}</h3>
         </li>
       ))}
     </ul>
@@ -77,7 +77,7 @@ export function TopCountries({ a, className }: { a: Aggregates; className?: stri
     <section aria-labelledby="top-countries-title" className={cn(CARD, 'flex min-h-0 flex-col px-5 pt-3.5 pb-2', className)}>
       <div className="flex items-center gap-2.5 pb-1.5">
         <Icon icon={Globe02Icon} size={22} className="text-muted" />
-        <h3 id="top-countries-title" className="flex-1 text-[17px] text-foreground-soft">Pays les plus exposés</h3>
+        <h3 id="top-countries-title" className="flex-1 text-title text-foreground-soft">Pays les plus exposés</h3>
         <HelpTip label="Pays les plus exposés" text="Nombre d'exigences en risque (non conformes ou de risque 4 ou 5) par pays. Cliquez sur un pays pour filtrer." className="-mr-1.5" />
       </div>
       {top.length === 0 ? (
@@ -95,9 +95,9 @@ export function TopCountries({ a, className }: { a: Aggregates; className?: stri
                   onClick={() => toggle('countries', country)}
                   className={cn('-mx-2 flex h-10 w-[calc(100%+1rem)] items-center gap-3 rounded-xl px-2 text-left hover:bg-surface', pressed && 'bg-surface')}
                 >
-                  <span className="min-w-0 flex-1 truncate text-[15px]">{country}</span>
+                  <span className="min-w-0 flex-1 truncate text-body">{country}</span>
                   <DotGauge value={max ? count / max : 0} />
-                  <span className="w-14 text-right text-[15px] tabular-nums">{nf.format(count)}</span>
+                  <span className="w-14 text-right text-body tabular-nums">{nf.format(count)}</span>
                 </button>
               </li>
             );

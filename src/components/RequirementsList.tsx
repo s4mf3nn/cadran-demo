@@ -19,7 +19,7 @@ export const RequirementsList = memo(function RequirementsList({ rows }: { rows:
 
   return (
     <section aria-label="Exigences" className="flex h-[32rem] flex-col overflow-hidden rounded-card border-2 border-card-border bg-background">
-      <p className="shrink-0 px-5 pt-4 pb-2 text-[17px] font-medium">
+      <p className="shrink-0 px-5 pt-4 pb-2 text-title font-medium">
         Exigences <span className="text-sm font-normal text-muted tabular-nums">{nf.format(rows.length)}</span>
       </p>
       <div ref={parentRef} className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
@@ -49,7 +49,7 @@ export const RequirementsList = memo(function RequirementsList({ rows }: { rows:
                       <StatusTag status={r.status} className="text-sm" />
                     </span>
                     <span className="flex items-center justify-between gap-3">
-                      <span className="truncate text-[15px]">{r.title}</span>
+                      <span className="truncate text-body">{r.title}</span>
                       <RiskMeter risk={r.risk} className="shrink-0" />
                     </span>
                   </button>

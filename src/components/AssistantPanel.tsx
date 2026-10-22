@@ -93,7 +93,7 @@ function CountryCards({ countries, aggregates }: { countries: string[]; aggregat
       {cards.map((c) => (
         <li key={c.country} className="flex flex-col gap-1 rounded-3xl border-2 border-card-border px-4 pt-3 pb-4">
           <span className="truncate text-sm text-muted">{c.country}</span>
-          <span className="num-tight text-[28px]" aria-label={`${nf.format(c.count)} exigences en risque`}>{nf.format(c.count)}</span>
+          <span className="num-tight text-stat" aria-label={`${nf.format(c.count)} exigences en risque`}>{nf.format(c.count)}</span>
           <SegmentBar value={max ? c.count / max : 0} className="mt-1.5" />
         </li>
       ))}
@@ -111,7 +111,7 @@ function Answer({ text, aggregates, caret }: { text: string; aggregates?: Aggreg
   const paragraphs = text.split(/\n\n+/);
   const cardsAt = aggregates ? paragraphs.findIndex((p) => citedCountries(p).length > 0) : -1;
   return (
-    <div className="flex flex-col gap-3.5 text-[15px] leading-relaxed text-foreground-soft">
+    <div className="flex flex-col gap-3.5 text-body leading-relaxed text-foreground-soft">
       {paragraphs.map((p, i) => (
         <Fragment key={i}>
           <p className="whitespace-pre-wrap">
@@ -126,7 +126,7 @@ function Answer({ text, aggregates, caret }: { text: string; aggregates?: Aggreg
 }
 
 function Question({ children }: { children: ReactNode }) {
-  return <div className="ml-10 self-end rounded-[22px_22px_6px_22px] bg-surface px-5 py-3.5 text-[15px] leading-relaxed">{children}</div>;
+  return <div className="ml-10 self-end rounded-[22px_22px_6px_22px] bg-surface px-5 py-3.5 text-body leading-relaxed">{children}</div>;
 }
 
 /** Échange passé : question + réponse figée, sans curseur ni squelette. */
@@ -206,7 +206,7 @@ export function AssistantPanel({ assistant, total, aggregates, closable = false 
 
               {status === 'thinking' && (
                 <div className="space-y-2" role="status">
-                  <p className="text-[15px] text-muted">L'assistant analyse la sélection…</p>
+                  <p className="text-body text-muted">L'assistant analyse la sélection…</p>
                   <div aria-hidden="true" className="space-y-2">
                     <Skeleton className="h-3 w-3/4 rounded-full" />
                     <Skeleton className="h-3 w-1/2 rounded-full" />
@@ -241,10 +241,10 @@ export function AssistantPanel({ assistant, total, aggregates, closable = false 
                   disabled={busy || !ready}
                   onClick={() => send(s)}
                   aria-keyshortcuts={String(i + 1)}
-                  className="flex min-h-[46px] w-full items-center gap-3 rounded-pill border-[1.5px] border-track px-5 py-2 text-left text-[15px] hover:bg-surface disabled:text-muted disabled:hover:bg-transparent"
+                  className="flex min-h-[46px] w-full items-center gap-3 rounded-pill border-[1.5px] border-track px-5 py-2 text-left text-body hover:bg-surface disabled:text-muted disabled:hover:bg-transparent"
                 >
                   <span className="flex-1">{s}</span>
-                  <span aria-hidden="true" className="text-[13px] text-muted tabular-nums">{i + 1}</span>
+                  <span aria-hidden="true" className="text-caption text-muted tabular-nums">{i + 1}</span>
                 </button>
               </li>
             ))}
@@ -258,7 +258,7 @@ export function AssistantPanel({ assistant, total, aggregates, closable = false 
             type="button"
             onClick={stop}
             aria-keyshortcuts="Escape"
-            className="inline-flex h-10 items-center gap-2 rounded-full bg-surface px-4 text-[15px] hover:bg-track"
+            className="inline-flex h-10 items-center gap-2 rounded-full bg-surface px-4 text-body hover:bg-track"
           >
             <Icon icon={StopCircleIcon} size={20} />
             Arrêter
@@ -277,7 +277,7 @@ export function AssistantPanel({ assistant, total, aggregates, closable = false 
             onChange={(e) => setQuestion(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Demander à Cadran…"
-            className="h-6 flex-1 resize-none bg-transparent text-[15px] leading-6 outline-none placeholder:text-muted focus-visible:outline-none"
+            className="h-6 flex-1 resize-none bg-transparent text-body leading-6 outline-none placeholder:text-muted focus-visible:outline-none"
           />
           <button
             type="submit"

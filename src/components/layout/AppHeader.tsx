@@ -11,7 +11,7 @@ import { RIGHT_PANEL_ID } from './RightPanel';
 
 export interface Timings { init?: number; query?: number }
 
-const PILL = 'inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-5 text-[15px] font-medium';
+const PILL = 'inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-5 text-body font-medium';
 
 /** Ligne de mesures : volume du référentiel puis durées réelles du worker, arrondies à la milliseconde. */
 export function TimingsText({ datasetSize, timings, isRefreshing }: { datasetSize?: number; timings: Timings; isRefreshing: boolean }) {
@@ -33,7 +33,7 @@ export function AppHeader({ rows, datasetSize, timings, isRefreshing }: { rows: 
   return (
     <header className="flex h-[76px] shrink-0 items-center justify-between gap-4 pl-1">
       <div className="min-w-0">
-        <h1 className="text-[30px] leading-9 font-semibold tracking-[-0.02em]">Tableau de bord</h1>
+        <h1 className="text-display leading-9 font-semibold tracking-[-0.02em]">Tableau de bord</h1>
         <TimingsText datasetSize={datasetSize} timings={timings} isRefreshing={isRefreshing} />
       </div>
       <div className="flex items-center gap-2.5">
