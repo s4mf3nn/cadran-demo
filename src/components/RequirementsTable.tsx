@@ -1,31 +1,27 @@
 import { memo, useRef, useState, type KeyboardEvent } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import {
-  Alert02Icon, ArrowDown01Icon, ArrowUp01Icon, ArrowUpDownIcon, Calendar03Icon, File01Icon, Globe02Icon,
-  GridViewIcon, InformationCircleIcon,
-} from '@hugeicons/core-free-icons';
-import type { IconSvgElement } from '@hugeicons/react';
-import { Button } from '@/components/ui/button';
+import { ArrowDown01Icon, ArrowUp01Icon, Layers01Icon } from '@hugeicons/core-free-icons';
 import { Icon } from '@/components/ui/icon';
-import { Kbd } from '@/components/ui/kbd';
 import { cn } from '@/lib/utils';
-import { COUNTRY_CODE } from '@/lib/labels';
-import { CATEGORIES, COUNTRIES, type Aggregates, type Requirement, type SortKey } from '../data/types';
+import { filterSummary, SORT_LABEL } from '@/lib/labels';
+import type { Aggregates, Requirement, SortKey } from '../data/types';
 import { useFilters } from '../store/filters';
 import { RiskMeter } from './RiskMeter';
 import { StatusTag } from './StatusTag';
 
-const COLUMNS: { key: SortKey; label: string; width: string; icon: IconSvgElement }[] = [
-  { key: 'ref', label: 'Référence', width: '10.5rem', icon: File01Icon },
-  { key: 'country', label: 'Pays', width: '11rem', icon: Globe02Icon },
-  { key: 'category', label: 'Catégorie', width: '9rem', icon: GridViewIcon },
-  { key: 'status', label: 'Statut', width: '8rem', icon: InformationCircleIcon },
-  { key: 'risk', label: 'Risque', width: '7.5rem', icon: Alert02Icon },
-  { key: 'dueAt', label: 'Échéance', width: '8rem', icon: Calendar03Icon },
+const COLUMNS: { key: SortKey; label: string; width: string }[] = [
+  { key: 'ref', label: 'Référence', width: '8.75rem' },
+  { key: 'country', label: 'Pays', width: '9rem' },
+  { key: 'status', label: 'Statut', width: '9rem' },
+  { key: 'risk', label: 'Risque', width: '6.25rem' },
+  { key: 'dueAt', label: 'Échéance', width: '7.5rem' },
 ];
-const GRID = `${COLUMNS.map((c) => c.width).join(' ')} minmax(16rem, 1fr)`;
-const ROW_HEIGHT = 40;
-const CELL = 'flex h-full min-w-0 items-center border-r border-border px-3 last:border-r-0';
+const GRID = `${COLUMNS.map((c) => c.width).join(' ')} minmax(12rem, 1fr)`;
+/** Largeur minimale de la grille (colonnes fixes + 12rem d'intitulé) : au-delà, l'intitulé s'élargit et se tronque. */
+const MIN_WIDTH = 'min-w-[52.5rem]';
+const ROW_HEIGHT = 46;
+const HEADER_HEIGHT = 36;
+const CELL = 'flex h-full min-w-0 items-center px-3';
 
 const dateFmt = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short' });
 const nf = new Intl.NumberFormat('fr-FR');
@@ -43,14 +39,15 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
   const selectedId = useFilters((s) => s.selectedId);
   const select = useFilters((s) => s.select);
   const open = useFilters((s) => s.open);
-  const nbCountries = useFilters((s) => s.filters.countries.length || COUNTRIES.length);
-  const nbCategories = useFilters((s) => s.filters.categories.length || CATEGORIES.length);
+  const filters = useFilters((s) => s.filters);
 
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => ROW_HEIGHT,
     overscan: 12,
+    // Les lignes commencent sous l'en-tête collant : sans cette marge, la ligne active peut s'y cacher.
+    scrollMargin: HEADER_HEIGHT,
   });
 
   const activeIndex = Math.min(active, Math.max(rows.length - 1, 0));
@@ -64,7 +61,7 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
   const onKeyDown = (e: KeyboardEvent) => {
     // Les touches de la grille ne doivent pas se déclencher depuis les boutons d'en-tête (Espace/Entrée = tri).
     if (e.target !== e.currentTarget) return;
-    const page = Math.floor((parentRef.current?.clientHeight ?? 400) / ROW_HEIGHT);
+    const page = Math.floor(((parentRef.current?.clientHeight ?? 400) - HEADER_HEIGHT) / ROW_HEIGHT);
     const row = rows[activeIndex];
     const keys: Record<string, () => void> = {
       ArrowDown: () => move(activeIndex + 1),
@@ -84,7 +81,19 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
   };
 
   return (
-    <section aria-label="Exigences" className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+    <section aria-labelledby="requirements-title" className="flex h-full min-h-0 flex-col overflow-hidden rounded-card border-2 border-card-border bg-background">
+      <div className="flex shrink-0 items-center gap-3 px-6 pt-4 pb-2">
+        <Icon icon={Layers01Icon} size={22} className="text-muted" />
+        <h2 id="requirements-title" className="text-[17px] font-medium">Exigences</h2>
+        <p className="min-w-0 flex-1 truncate text-sm text-muted">
+          {nf.format(rows.length)} · {filterSummary(filters)}
+          {aggregates && <span className="sr-only"> · {nf.format(aggregates.byStatus.non_conforme)} non conformes · {nf.format(aggregates.atRisk)} en risque</span>}
+        </p>
+        <p className="shrink-0 text-sm text-muted">
+          Trié par {SORT_LABEL[sort.key].toLowerCase()} {sort.dir === 'asc' ? '↑' : '↓'}
+        </p>
+      </div>
+
       <div
         role="grid"
         aria-label="Exigences réglementaires"
@@ -93,9 +102,9 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
         tabIndex={0}
         onKeyDown={onKeyDown}
         ref={parentRef}
-        className="relative min-h-0 flex-1 overflow-auto text-sm outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+        className="group/grid relative min-h-0 flex-1 overflow-auto px-3 pb-3 text-[15px] outline-none"
       >
-        <div role="row" aria-rowindex={1} className="sticky top-0 z-10 grid min-w-max border-b border-border bg-sidebar" style={{ gridTemplateColumns: GRID, height: ROW_HEIGHT }}>
+        <div role="row" aria-rowindex={1} className={cn('sticky top-0 z-10 grid bg-background', MIN_WIDTH)} style={{ gridTemplateColumns: GRID, height: HEADER_HEIGHT }}>
           {COLUMNS.map((c) => {
             const isSorted = sort.key === c.key;
             return (
@@ -103,32 +112,32 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
                 key={c.key}
                 role="columnheader"
                 aria-sort={isSorted ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}
-                className="h-full min-w-0 border-r border-border"
+                className="h-full min-w-0"
               >
-                <Button
+                <button
                   type="button"
-                  variant="ghost"
                   onClick={() => setSort(c.key)}
-                  className="h-full w-full justify-start gap-1.5 rounded-none px-3 text-xs font-medium text-muted-foreground hover:bg-accent"
+                  className={cn('flex h-full w-full items-center gap-1 rounded-lg px-3 text-left text-[13px] hover:text-foreground', isSorted ? 'text-foreground-soft' : 'text-muted')}
                 >
-                  <Icon icon={c.icon} size={14} />
-                  <span className="flex-1 text-left">{c.label}</span>
-                  <Icon icon={isSorted ? (sort.dir === 'asc' ? ArrowUp01Icon : ArrowDown01Icon) : ArrowUpDownIcon} size={14} className={isSorted ? 'text-foreground' : 'text-muted-foreground/70'} />
-                </Button>
+                  {c.label}
+                  {isSorted && <Icon icon={sort.dir === 'asc' ? ArrowUp01Icon : ArrowDown01Icon} size={14} />}
+                </button>
               </div>
             );
           })}
-          <div role="columnheader" className="flex items-center px-3 text-xs font-medium text-muted-foreground">Intitulé</div>
+          <div role="columnheader" className="flex items-center px-3 text-[13px] text-muted">Intitulé</div>
         </div>
 
         {rows.length === 0 ? (
-          <p className="p-6 text-center text-muted-foreground">Aucune exigence ne correspond aux filtres.</p>
+          <p className="p-6 text-center text-muted">Aucune exigence ne correspond aux filtres.</p>
         ) : (
-          <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }} className="min-w-max">
+          <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }} className={MIN_WIDTH}>
             {virtualizer.getVirtualItems().map((v) => {
               const r = rows[v.index]!;
               const isActive = v.index === activeIndex;
               const isSelected = r.id === selectedId;
+              // Pas de séparateur au-dessus de la première ligne, ni autour de la ligne sélectionnée.
+              const noSeparator = v.index === 0 || isSelected || rows[v.index - 1]?.id === selectedId;
               return (
                 <div
                   key={r.id}
@@ -138,45 +147,25 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
                   aria-selected={isSelected}
                   onClick={() => { setActive(v.index); select(r.id); open(r); }}
                   className={cn(
-                    'absolute left-0 grid w-full min-w-max cursor-pointer items-center border-b border-border',
-                    isSelected ? 'bg-surface' : 'hover:bg-accent/60',
-                    isActive && 'shadow-[inset_0_0_0_2px_var(--ring)]',
+                    'absolute left-0 grid w-full cursor-pointer items-center rounded-2xl border-t',
+                    noSeparator ? 'border-transparent' : 'border-line',
+                    isSelected ? 'bg-surface' : 'hover:bg-surface/60',
+                    isActive && 'group-focus-visible/grid:shadow-[inset_0_0_0_2px_var(--foreground)]',
                   )}
-                  style={{ gridTemplateColumns: GRID, height: ROW_HEIGHT, transform: `translateY(${v.start}px)` }}
+                  style={{ gridTemplateColumns: GRID, height: ROW_HEIGHT, transform: `translateY(${v.start - HEADER_HEIGHT}px)` }}
                 >
-                  <div role="gridcell" className={cn(CELL, 'gap-2')}>
-                    <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center rounded-md border border-border bg-background text-muted-foreground">
-                      <Icon icon={File01Icon} size={13} />
-                    </span>
-                    <span className="truncate font-mono text-xs underline decoration-border decoration-1 underline-offset-4">{r.ref}</span>
-                  </div>
-                  <div role="gridcell" className={CELL}>
-                    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-background py-0.5 pr-2 pl-1 text-xs">
-                      <span aria-hidden="true" className="rounded-full bg-accent px-1 font-mono text-[10px] font-medium text-muted-foreground">{COUNTRY_CODE[r.country]}</span>
-                      <span className="truncate">{r.country}</span>
-                    </span>
-                  </div>
-                  <div role="gridcell" className={cn(CELL, 'truncate')}>{r.category}</div>
+                  <div role="gridcell" className={cn(CELL, 'text-muted-soft tabular-nums')}><span className="truncate">{r.ref}</span></div>
+                  <div role="gridcell" className={CELL}><span className="truncate">{r.country}</span></div>
                   <div role="gridcell" className={CELL}><StatusTag status={r.status} /></div>
                   <div role="gridcell" className={CELL}><RiskMeter risk={r.risk} /></div>
                   <div role="gridcell" className={cn(CELL, 'tabular-nums')}>{dateFmt.format(r.dueAt)}</div>
-                  <div role="gridcell" className={cn(CELL, 'truncate text-muted-foreground')}>{r.title}</div>
+                  <div role="gridcell" className={CELL}><span className="truncate">{r.title}</span></div>
                 </div>
               );
             })}
           </div>
         )}
       </div>
-
-      <footer className="flex h-10 shrink-0 items-center justify-between gap-4 border-t border-border bg-sidebar px-4 text-xs text-muted-foreground">
-        <p className="tabular-nums">
-          <strong className="font-medium text-foreground">{nf.format(rows.length)}</strong> exigences · {nbCountries} pays · {nbCategories} catégories
-          {aggregates && ` · ${nf.format(aggregates.byStatus.non_conforme)} non conformes · ${nf.format(aggregates.atRisk)} en risque`}
-        </p>
-        <p className="hidden items-center gap-1.5 md:flex" aria-hidden="true">
-          <Kbd>↑</Kbd><Kbd>↓</Kbd> naviguer <Kbd>↵</Kbd> ouvrir (ou clic)
-        </p>
-      </footer>
     </section>
   );
 });
