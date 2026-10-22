@@ -1,4 +1,4 @@
-import type { Country, SortKey } from '../data/types';
+import type { Country, Risk, SortKey } from '../data/types';
 
 export const SORT_LABEL: Record<SortKey, string> = {
   ref: 'Référence',
@@ -15,3 +15,5 @@ export const COUNTRY_CODE: Record<Country, string> = {
   'Royaume-Uni': 'GB', 'États-Unis': 'US', Canada: 'CA', Brésil: 'BR', Chine: 'CN', Inde: 'IN', Japon: 'JP',
   'Corée du Sud': 'KR', Australie: 'AU', Mexique: 'MX', Turquie: 'TR', Maroc: 'MA', 'Afrique du Sud': 'ZA',
 };
+
+export const RISK_LABEL: Record<Risk, string> = { 1: 'Faible', 2: 'Limité', 3: 'Modéré', 4: 'Élevé', 5: 'Critique' };

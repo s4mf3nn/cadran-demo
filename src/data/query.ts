@@ -1,20 +1,33 @@
 import {
-  CATEGORIES, COUNTRIES, STATUSES,
-  type Aggregates, type Category, type Filters, type Requirement, type Sort, type Status,
+  AT_RISK_MIN, CATEGORIES, COUNTRIES, RISKS, STATUSES,
+  type Aggregates, type Category, type Filters, type Requirement, type Risk, type Sort, type Status,
 } from './types';
+
+const DAY = 86_400_000;
 
 /**
  * Fonctions pures, sans dépendance au DOM : elles tournent dans le Web Worker
  * en production et sont testées directement dans Vitest.
  */
 
-export function matches(r: Requirement, f: Filters, needle: string): boolean {
+/** Tous les filtres sauf le statut (sert aussi aux volumes par statut du panneau de filtres). */
+function matchesExceptStatus(r: Requirement, f: Filters, needle: string, dueLimit: number): boolean {
   if (r.risk < f.minRisk) return false;
+  if (r.dueAt > dueLimit) return false;
   if (f.countries.length && !f.countries.includes(r.country)) return false;
   if (f.categories.length && !f.categories.includes(r.category)) return false;
-  if (f.statuses.length && !f.statuses.includes(r.status)) return false;
+  if (f.regulations.length && !f.regulations.includes(r.regulation)) return false;
   if (needle && !r.ref.toLowerCase().includes(needle) && !r.title.toLowerCase().includes(needle)) return false;
   return true;
+}
+
+const matchesStatus = (r: Requirement, f: Filters) => !f.statuses.length || f.statuses.includes(r.status);
+
+/** Limite haute d'échéance du filtre (les retards restent inclus). */
+const dueLimitOf = (f: Filters, now: number) => (f.dueWithin == null ? Infinity : now + f.dueWithin * DAY);
+
+export function matches(r: Requirement, f: Filters, needle: string, now = Date.now()): boolean {
+  return matchesExceptStatus(r, f, needle, dueLimitOf(f, now)) && matchesStatus(r, f);
 }
 
 const STATUS_ORDER: Record<Status, number> = { conforme: 0, en_cours: 1, a_evaluer: 2, non_conforme: 3 };
@@ -30,7 +43,7 @@ export function compare(a: Requirement, b: Requirement, sort: Sort): number {
   return sort.dir === 'asc' ? d || a.id - b.id : -d || a.id - b.id;
 }
 
-const isAtRisk = (r: Requirement) => r.status === 'non_conforme' || r.risk >= 3;
+const isAtRisk = (r: Requirement) => r.status === 'non_conforme' || r.risk >= AT_RISK_MIN;
 
 export interface QueryResult {
   /** Index des lignes retenues, dans l'ordre de tri. Transférable sans copie. */
@@ -40,9 +53,15 @@ export interface QueryResult {
 
 export function runQuery(data: Requirement[], filters: Filters, sort: Sort, now = Date.now()): QueryResult {
   const needle = filters.search.trim().toLowerCase();
+  const dueLimit = dueLimitOf(filters, now);
+  const in90 = now + 90 * DAY;
   const kept: Requirement[] = [];
 
   const byStatus = Object.fromEntries(STATUSES.map((s) => [s, 0])) as Record<Status, number>;
+  const statusFacets = Object.fromEntries(STATUSES.map((s) => [s, 0])) as Record<Status, number>;
+  const byRisk = Object.fromEntries(RISKS.map((r) => [r, 0])) as Record<Risk, number>;
+  let overdueNonConforme = 0;
+  let dueWithin90 = 0;
   const countryIdx = new Map(COUNTRIES.map((c, i) => [c, i]));
   const categoryIdx = new Map(CATEGORIES.map((c, i) => [c, i]));
   const byCountry = new Uint32Array(COUNTRIES.length);
@@ -58,10 +77,16 @@ export function runQuery(data: Requirement[], filters: Filters, sort: Sort, now 
 
   // Une seule passe sur le dataset pour le filtre et toutes les agrégations.
   for (const r of data) {
-    if (!matches(r, filters, needle)) continue;
+    if (!matchesExceptStatus(r, filters, needle, dueLimit)) continue;
+    statusFacets[r.status]++;
+    if (!matchesStatus(r, filters)) continue;
     kept.push(r);
     byStatus[r.status]++;
     byCategory[r.category]++;
+    byRisk[r.risk]++;
+    if (r.dueAt < now) {
+      if (r.status === 'non_conforme') overdueNonConforme++;
+    } else if (r.dueAt < in90) dueWithin90++;
     if (isAtRisk(r)) {
       atRisk++;
       const ci = countryIdx.get(r.country)!;
@@ -86,6 +111,10 @@ export function runQuery(data: Requirement[], filters: Filters, sort: Sort, now 
       total: kept.length,
       atRisk,
       byStatus,
+      statusFacets,
+      byRisk,
+      overdueNonConforme,
+      dueWithin90,
       byCountry: COUNTRIES.map((country, i) => ({ country, count: byCountry[i]! }))
         .sort((a, b) => b.count - a.count),
       heatmap: COUNTRIES.flatMap((country, ci) =>

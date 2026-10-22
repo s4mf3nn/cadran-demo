@@ -23,6 +23,11 @@ describe('generateRequirements — écarts entre pays', () => {
     expect(cnt('Turquie', 'Textile')).toBeGreaterThan(cnt('Turquie', 'Nautique') * 5);
   });
 
+  it('note le risque de 1 à 5 et utilise les 5 niveaux', () => {
+    const levels = new Set(rows.map((r) => r.risk));
+    expect([...levels].sort()).toEqual([1, 2, 3, 4, 5]);
+  });
+
   it('le taux de non-conformité varie nettement selon le pays', () => {
     expect(rate('Chine')).toBeGreaterThan(rate('Allemagne') * 3);
   });

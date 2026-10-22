@@ -51,7 +51,8 @@ const RISK_OPTIONS: { value: Risk; label: string; name: string }[] = [
   { value: 1, label: '≥ 1', name: 'Risque 1 ou plus' },
   { value: 2, label: '≥ 2', name: 'Risque 2 ou plus' },
   { value: 3, label: '≥ 3', name: 'Risque 3 ou plus' },
-  { value: 4, label: '4', name: 'Risque 4 uniquement' },
+  { value: 4, label: '≥ 4', name: 'Risque 4 ou plus' },
+  { value: 5, label: '5', name: 'Risque 5 uniquement' },
 ];
 
 function CountryCombobox() {
@@ -163,7 +164,7 @@ export function FilterPanel({ aggregates }: { aggregates?: Aggregates }) {
           aria-label="Risque minimum"
           value={String(filters.minRisk)}
           onValueChange={(v) => setMinRisk(Number(v) as Risk)}
-          className="grid grid-cols-4 gap-0.5 rounded-lg bg-accent p-0.5"
+          className="grid grid-cols-5 gap-0.5 rounded-lg bg-accent p-0.5"
         >
           {RISK_OPTIONS.map((o) => (
             <RadioGroupPrimitive.Item

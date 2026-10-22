@@ -1,9 +1,9 @@
 import { SparklesIcon } from '@hugeicons/core-free-icons';
 import type { AssistantApi } from '../hooks/useAssistant';
-import { COUNTRY_CODE } from '@/lib/labels';
+import { COUNTRY_CODE, RISK_LABEL } from '@/lib/labels';
 import { focusIn } from '../lib/focus';
 import { useFilters } from '../store/filters';
-import type { Requirement, Risk } from '../data/types';
+import type { Requirement } from '../data/types';
 import { RiskMeter } from './RiskMeter';
 import { StatusTag } from './StatusTag';
 import { Button } from '@/components/ui/button';
@@ -23,8 +23,6 @@ export function dueLabel(dueAt: number, now = Date.now()): string {
   const unit = n > 1 ? 'jours' : 'jour';
   return days > 0 ? `dans ${n} ${unit}` : `dépassée de ${n} ${unit}`;
 }
-
-const RISK_LABEL: Record<Risk, string> = { 1: 'Faible', 2: 'Modéré', 3: 'Élevé', 4: 'Critique' };
 
 function Header({ r, Title }: { r: Requirement; Title: typeof DialogTitle }) {
   return (
