@@ -1,5 +1,5 @@
 import { FilterPanel } from './components/FilterPanel';
-import { RequirementsTable } from './components/RequirementsTable';
+import { RequirementsTable, TABLE_MIN_HEIGHT } from './components/RequirementsTable';
 import { AssistantPanel } from './components/AssistantPanel';
 import { Dashboard } from './components/Dashboard';
 import { WorldMap } from './components/viz/WorldMap';
@@ -70,7 +70,7 @@ export default function App() {
               <>
                 <Dashboard a={aggregates} isRefreshing={isRefreshing} />
                 <WorldMap a={aggregates} className={cn('shrink-0 transition-opacity', isRefreshing && 'opacity-60')} />
-                <div className="flex min-h-[320px] flex-1 flex-col">
+                <div className="flex flex-1 flex-col" style={{ minHeight: `min(${TABLE_MIN_HEIGHT}px, 100%)` }}>
                   <RequirementsTable rows={rows} aggregates={aggregates} />
                 </div>
               </>

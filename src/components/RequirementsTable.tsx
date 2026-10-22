@@ -21,6 +21,9 @@ const GRID = `${COLUMNS.map((c) => c.width).join(' ')} minmax(12rem, 1fr)`;
 const MIN_WIDTH = 'min-w-[52.5rem]';
 const ROW_HEIGHT = 46;
 const HEADER_HEIGHT = 36;
+const TITLE_HEIGHT = 47;
+/** Hauteur de la carte pour 20 lignes : titre + en-tête + lignes + pb-3 de la grille + bordures (plafonnée à la zone visible dans App). */
+export const TABLE_MIN_HEIGHT = TITLE_HEIGHT + HEADER_HEIGHT + 20 * ROW_HEIGHT + 12 + 4;
 const CELL = 'flex h-full min-w-0 items-center px-3';
 
 const dateFmt = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short' });
@@ -82,7 +85,7 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
 
   return (
     <section aria-labelledby="requirements-title" className="flex h-full min-h-0 flex-col overflow-hidden rounded-card border-2 border-card-border bg-background">
-      <div className="flex shrink-0 items-center gap-3 px-6 pt-4 pb-2">
+      <div className="flex shrink-0 items-center gap-3 px-6 pt-4 pb-2" style={{ height: TITLE_HEIGHT }}>
         <Icon icon={Layers01Icon} size={22} className="text-muted" />
         <h2 id="requirements-title" className="text-title font-medium">Exigences</h2>
         <p className="min-w-0 flex-1 truncate text-sm text-muted">
