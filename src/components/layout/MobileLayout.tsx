@@ -29,7 +29,7 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
 
   return (
     <div className="flex h-dvh flex-col bg-background text-foreground">
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
+      <header className="flex h-14 shrink-0 items-center justify-between px-4">
         <Brand />
         <Button type="button" variant="ghost" size="icon" aria-label="Rechercher" onClick={() => useUi.getState().setSearchOpen(true)}>
           <Icon icon={Search01Icon} size={20} />
@@ -38,7 +38,7 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
 
       <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pt-4 pb-24 *:shrink-0">
         <div className="flex items-center justify-between gap-2">
-          <h1 className="text-lg font-semibold">Tableau de bord</h1>
+          <h1 className="text-2xl font-semibold tracking-[-0.02em]">Tableau de bord</h1>
           <SortButton />
         </div>
 
@@ -48,7 +48,7 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
           <>
             <div className={cn('flex flex-col gap-3 transition-opacity', isRefreshing && 'opacity-60')}>
               <GaugeRow a={aggregates} className="grid-cols-2 *:h-[168px] *:last:col-span-2" />
-              <WaveGrid a={aggregates} className="h-[340px]" />
+              <WaveGrid a={aggregates} className="h-[560px] grid-cols-1 grid-rows-4" />
               <TopCountries a={aggregates} />
             </div>
             <RequirementsList rows={rows} />
@@ -56,12 +56,12 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
         )}
       </main>
 
-      <nav aria-label="Panneaux" className="fixed inset-x-4 bottom-4 z-40 flex gap-2 rounded-2xl border border-border bg-background p-2 shadow-lg">
-        <Button type="button" variant="outline" className="h-11 flex-1" aria-haspopup="dialog" onClick={() => setDrawer('left', true)}>
+      <nav aria-label="Panneaux" className="fixed inset-x-4 bottom-4 z-40 flex gap-2 rounded-full border-2 border-card-border bg-background p-1.5">
+        <Button type="button" variant="ghost" className="h-11 flex-1 rounded-full bg-surface hover:bg-track" aria-haspopup="dialog" onClick={() => setDrawer('left', true)}>
           <Icon icon={FilterHorizontalIcon} />
           Filtres
         </Button>
-        <Button type="button" variant="ghost" className="h-11 flex-1 bg-foreground text-background hover:bg-foreground/90" aria-haspopup="dialog" onClick={() => setDrawer('right', true)}>
+        <Button type="button" variant="ghost" className="h-11 flex-1 rounded-full bg-foreground text-background hover:bg-foreground-soft" aria-haspopup="dialog" onClick={() => setDrawer('right', true)}>
           <Icon icon={AiMagicIcon} />
           Assistant
         </Button>
@@ -69,7 +69,7 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
 
       <Drawer open={leftDrawer} onOpenChange={(o) => setDrawer('left', o)}>
         <DrawerContent className="data-[vaul-drawer-direction=bottom]:max-h-[88dvh]">
-          <DrawerHeader className="text-left">
+          <DrawerHeader className="sr-only">
             <DrawerTitle>Filtres</DrawerTitle>
             <DrawerDescription className="sr-only">Affiner les exigences affichées</DrawerDescription>
           </DrawerHeader>
@@ -83,8 +83,8 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
 
       <Drawer open={rightDrawer} onOpenChange={(o) => setDrawer('right', o)}>
         <DrawerContent className="h-[88dvh] data-[vaul-drawer-direction=bottom]:max-h-[88dvh]">
-          <DrawerHeader className="text-left">
-            <DrawerTitle className="sr-only">Assistant</DrawerTitle>
+          <DrawerHeader className="sr-only">
+            <DrawerTitle>Assistant</DrawerTitle>
             <DrawerDescription className="sr-only">Poser une question sur la sélection courante</DrawerDescription>
           </DrawerHeader>
           <AssistantPanel assistant={assistant} total={aggregates?.total} aggregates={aggregates} />

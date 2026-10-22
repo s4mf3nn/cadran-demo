@@ -2,8 +2,6 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
 test.use({ viewport: { width: 390, height: 844 } });
-
-test.use({ viewport: { width: 390, height: 844 } });
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Tableau de bord' })).toBeVisible({ timeout: 15_000 });

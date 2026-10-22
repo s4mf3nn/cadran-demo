@@ -83,13 +83,13 @@ function RiskSelector() {
         orientation="horizontal"
         value={String(minRisk)}
         onValueChange={(v) => setMinRisk(Number(v) as Risk)}
-        className="relative grid h-11 grid-cols-5 rounded-full border-[1.5px] border-track p-[3px]"
+        className="relative grid h-11 grid-cols-5 rounded-full border-[1.5px] border-track p-[3px] [--knob:36px] max-md:h-[53px] max-md:[--knob:44px]"
       >
         {/* Plage retenue : du seuil au niveau maximal, sur un fond continu. */}
         <span
           aria-hidden="true"
           className="absolute inset-y-[3px] right-[3px] rounded-full bg-surface"
-          style={{ left: `calc(3px + (100% - 6px) * ${(minRisk - 0.5) / 5} - 18px)` }}
+          style={{ left: `calc(3px + (100% - 6px) * ${(minRisk - 0.5) / 5} - var(--knob) / 2)` }}
         />
         {RISKS.map((r) => (
           <RadioGroupPrimitive.Item
@@ -97,7 +97,7 @@ function RiskSelector() {
             value={String(r)}
             aria-label={`${riskValueLabel(r)} (${RISK_LABEL[r]})`}
             className={cn(
-              'relative z-10 grid size-9 place-items-center justify-self-center rounded-full text-[15px] tabular-nums',
+              'relative z-10 grid size-(--knob) place-items-center justify-self-center rounded-full text-[15px] tabular-nums',
               r < minRisk ? 'text-muted hover:text-foreground' : 'text-foreground',
               'data-[state=checked]:bg-foreground data-[state=checked]:font-bold data-[state=checked]:text-background',
             )}

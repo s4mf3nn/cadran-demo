@@ -15,7 +15,7 @@ export function SortButton({ className }: { className?: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button type="button" variant="outline" size="sm" className={cn('border-dashed shadow-none', className)}>
+        <Button type="button" variant="outline" size="sm" className={cn('h-11 rounded-full border-[1.5px] border-track bg-transparent px-4 text-[15px]', className)}>
           <Icon icon={ArrowUpDownIcon} />
           Trier
         </Button>

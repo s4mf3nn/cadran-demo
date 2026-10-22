@@ -62,8 +62,8 @@ export function WaveCard({ icon, title, detail, help, value, variant = 0 }: {
       <div className="relative flex items-start gap-2.5 px-5 pt-[18px]">
         <Icon icon={icon} size={20} className="mt-px shrink-0 text-muted" />
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <h3 className="truncate text-[15px] leading-5 font-normal text-foreground-soft">{title}</h3>
-          <p className="truncate text-[13px] leading-4 text-muted">{detail}</p>
+          <h3 className="line-clamp-2 text-[15px] leading-5 font-normal text-foreground-soft">{title}</h3>
+          <p className="line-clamp-2 text-[13px] leading-4 text-muted">{detail}</p>
         </div>
         <HelpTip label={title} text={help} className="-mt-0.5 -mr-1.5" />
       </div>
