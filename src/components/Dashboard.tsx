@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Alert02Icon, Calendar03Icon, FireIcon, Globe02Icon, HourglassIcon } from '@hugeicons/core-free-icons';
 import type { Aggregates } from '../data/types';
 import { useFilters } from '../store/filters';
@@ -21,7 +22,7 @@ export function GaugeRow({ a, className }: { a: Aggregates; className?: string }
     { title: 'À évaluer', value: ratio(a.byStatus.a_evaluer, a.total), help: 'Part des exigences au statut À évaluer.' },
   ];
   return (
-    <ul aria-label="Indicateurs clés" className={cn('grid gap-3', className)}>
+    <ul aria-label="Jauges" className={cn('grid gap-3', className)}>
       {gauges.map((g) => (
         <li key={g.title} className={cn(CARD, 'relative flex flex-col items-center justify-center gap-2.5 px-2 pt-2')}>
           <HelpTip label={g.title} text={g.help} className="absolute top-2.5 right-2.5" />
@@ -30,6 +31,19 @@ export function GaugeRow({ a, className }: { a: Aggregates; className?: string }
         </li>
       ))}
     </ul>
+  );
+}
+
+/**
+ * Section « Indicateurs clés » (jauges, vagues, pays exposés) : son h2 masqué coiffe toutes les cartes en h3,
+ * qui ne sautent ainsi pas de niveau après le h1 et ne se retrouvent pas sous un autre titre.
+ */
+export function KeyIndicators({ className, children }: { className?: string; children: ReactNode }) {
+  return (
+    <section aria-labelledby="key-indicators-title" className={className}>
+      <h2 id="key-indicators-title" className="sr-only">Indicateurs clés</h2>
+      {children}
+    </section>
   );
 }
 
@@ -91,13 +105,13 @@ export function TopCountries({ a, className }: { a: Aggregates; className?: stri
                 <button
                   type="button"
                   aria-pressed={pressed}
-                  aria-label={`Filtrer sur ${country} : ${nf.format(count)} exigences en risque`}
                   onClick={() => toggle('countries', country)}
                   className={cn('-mx-2 flex h-10 w-[calc(100%+1rem)] items-center gap-3 rounded-xl px-2 text-left hover:bg-surface', pressed && 'bg-surface')}
                 >
-                  <span className="min-w-0 flex-1 truncate text-body">{country}</span>
+                  {/* Nom accessible construit autour du texte visible (WCAG 2.5.3) : « Filtrer sur France 1 234 exigences en risque ». */}
+                  <span className="min-w-0 flex-1 truncate text-body"><span className="sr-only">Filtrer sur </span>{country}</span>
                   <DotGauge value={max ? count / max : 0} />
-                  <span className="w-14 text-right text-body tabular-nums">{nf.format(count)}</span>
+                  <span className="w-14 text-right text-body tabular-nums">{nf.format(count)}<span className="sr-only"> exigences en risque</span></span>
                 </button>
               </li>
             );
@@ -111,12 +125,12 @@ export function TopCountries({ a, className }: { a: Aggregates; className?: stri
 /** Centre du tableau de bord : rangée de jauges, puis vagues (colonnes 1 à 3) et pays (colonnes 4 et 5). */
 export function Dashboard({ a, isRefreshing }: { a: Aggregates; isRefreshing: boolean }) {
   return (
-    <div className={cn('flex flex-col gap-3.5 transition-opacity', isRefreshing && 'opacity-60')}>
+    <KeyIndicators className={cn('flex flex-col gap-3.5 transition-opacity', isRefreshing && 'opacity-60')}>
       <GaugeRow a={a} className="h-[168px] grid-cols-5" />
       <div className="grid h-[300px] grid-cols-5 gap-3">
         <WaveGrid a={a} className="col-span-3" />
         <TopCountries a={a} className="col-span-2" />
       </div>
-    </div>
+    </KeyIndicators>
   );
 }

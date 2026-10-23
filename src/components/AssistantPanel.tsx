@@ -3,6 +3,7 @@ import { ArrowDown01Icon, ArrowUp01Icon, ArrowUp02Icon, Cancel01Icon, RefreshIco
 import { SUGGESTIONS, type AssistantApi, type Turn } from '../hooks/useAssistant';
 import { COUNTRIES, type Aggregates } from '../data/types';
 import { filterChips, type FilterChip } from '../lib/labels';
+import { readFlag, writeFlag, type FlagValues } from '../lib/storage';
 import { useFilters } from '../store/filters';
 import { useUi } from '../store/ui';
 import { RIGHT_PANEL_ID } from './layout/RightPanel';
@@ -60,23 +61,14 @@ function AssistantHeader({ closable }: { closable: boolean }) {
 const BOTTOM_BUTTON = 'inline-flex h-10 items-center gap-2 rounded-full bg-surface px-4 text-body hover:bg-track';
 
 const SUGGESTIONS_KEY = 'cadran.assistant.suggestions';
+const VISIBLE_HIDDEN: FlagValues = ['visible', 'hidden'];
 
-/** Suggestions visibles par défaut ; le choix est mémorisé (lecture/écriture protégées). */
+/** Suggestions visibles par défaut ; le choix est mémorisé. */
 function useSuggestionsVisible() {
-  const [visible, setVisible] = useState(() => {
-    try {
-      return localStorage.getItem(SUGGESTIONS_KEY) !== 'hidden';
-    } catch {
-      return true;
-    }
-  });
+  const [visible, setVisible] = useState(() => readFlag(SUGGESTIONS_KEY, VISIBLE_HIDDEN, true));
   const toggle = () =>
     setVisible((v) => {
-      try {
-        localStorage.setItem(SUGGESTIONS_KEY, v ? 'hidden' : 'visible');
-      } catch {
-        // Pas de persistance possible : le choix vaut pour la session.
-      }
+      writeFlag(SUGGESTIONS_KEY, VISIBLE_HIDDEN, !v);
       return !v;
     });
   return [visible, toggle] as const;
@@ -167,6 +159,8 @@ export function AssistantPanel({ assistant, total, aggregates, closable = false 
   const { status, text, error, question: asked, history, send, stop, reset, ready } = assistant;
   const [question, setQuestion] = useState('');
   const [showSuggestions, toggleSuggestions] = useSuggestionsVisible();
+  // Raccourcis 1–3 désactivés dans Réglages : on ne les annonce plus (aria-keyshortcuts) ni ne les affiche.
+  const charKeys = useUi((s) => s.charKeys);
   const scrollRef = useRef<HTMLDivElement>(null);
   const busy = status === 'thinking' || status === 'streaming';
 
@@ -275,11 +269,11 @@ export function AssistantPanel({ assistant, total, aggregates, closable = false 
                   type="button"
                   disabled={busy || !ready}
                   onClick={() => send(s)}
-                  aria-keyshortcuts={String(i + 1)}
+                  aria-keyshortcuts={charKeys ? String(i + 1) : undefined}
                   className="flex min-h-[46px] w-full items-center gap-3 rounded-pill border-[1.5px] border-track px-5 py-2 text-left text-body hover:bg-surface disabled:text-muted disabled:hover:bg-transparent"
                 >
                   <span className="flex-1">{s}</span>
-                  <span aria-hidden="true" className="text-caption text-muted tabular-nums">{i + 1}</span>
+                  {charKeys && <span aria-hidden="true" className="text-caption text-muted tabular-nums">{i + 1}</span>}
                 </button>
               </li>
             ))}
@@ -304,7 +298,7 @@ export function AssistantPanel({ assistant, total, aggregates, closable = false 
           )
         )}
 
-        <form onSubmit={onSubmit} className="flex h-[58px] w-full items-center gap-2 rounded-full bg-surface pr-[9px] pl-6">
+        <form onSubmit={onSubmit} className="flex h-[58px] w-full items-center gap-2 rounded-full bg-surface pr-[9px] pl-6 has-[textarea:focus-visible]:outline-2 has-[textarea:focus-visible]:outline-offset-2 has-[textarea:focus-visible]:outline-foreground">
           <label htmlFor="assistant-input" className="sr-only">
             Question à l'assistant
           </label>

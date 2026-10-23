@@ -4,7 +4,7 @@ import type { AssistantApi } from '@/hooks/useAssistant';
 import { useUi } from '@/store/ui';
 import { AssistantPanel } from '../AssistantPanel';
 import { FilterPanel } from '../FilterPanel';
-import { GaugeRow, TopCountries, WaveGrid } from '../Dashboard';
+import { GaugeRow, KeyIndicators, TopCountries, WaveGrid } from '../Dashboard';
 import { RequirementsList } from '../RequirementsList';
 import { WorldMap } from '../viz/WorldMap';
 import { Brand, SidebarBody } from './Sidebar';
@@ -12,6 +12,7 @@ import { SortButton } from './ViewBar';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Icon } from '@/components/ui/icon';
+import { MAIN_ID } from '@/lib/focus';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -37,7 +38,7 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
         </Button>
       </header>
 
-      <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pt-4 pb-24 *:shrink-0">
+      <main id={MAIN_ID} tabIndex={-1} className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pt-4 pb-24 outline-none *:shrink-0">
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-2xl font-semibold tracking-[-0.02em]">Tableau de bord</h1>
           <SortButton />
@@ -47,11 +48,11 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
           <p className="py-12 text-center text-muted-foreground" aria-live="polite">Chargement du référentiel…</p>
         ) : (
           <>
-            <div className={cn('flex flex-col gap-3 transition-opacity', isRefreshing && 'opacity-60')}>
+            <KeyIndicators className={cn('flex flex-col gap-3 transition-opacity', isRefreshing && 'opacity-60')}>
               <GaugeRow a={aggregates} className="grid-cols-2 *:h-[168px] *:last:col-span-2" />
               <WaveGrid a={aggregates} className="h-[560px] grid-cols-1 grid-rows-4" />
               <TopCountries a={aggregates} />
-            </div>
+            </KeyIndicators>
             <WorldMap a={aggregates} className={cn('transition-opacity', isRefreshing && 'opacity-60')} />
             <RequirementsList rows={rows} />
           </>

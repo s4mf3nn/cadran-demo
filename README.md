@@ -7,7 +7,7 @@ Ce qu'il met en avant :
 - **Performance** : gros volume de données traité côté client sans bloquer l'interface (Web Worker, transferts sans copie, virtualisation).
 - **Visualisation de données** sur mesure en SVG, dont une carte du monde interactive avec regroupement et zoom.
 - **Intégration IA** en streaming (SSE, machine à états, annulation).
-- **Accessibilité** (ARIA grid, navigation clavier, audit axe WCAG 2 AA) et **tests** à tous les niveaux.
+- **Accessibilité** visée WCAG 2.2 AA (ARIA grid, navigation clavier, audit axe automatisé) et **tests** unitaires, de composants et end-to-end.
 
 | Bureau (1600×1000) | Carte zoomée et réponse de l'assistant |
 | --- | --- |
@@ -95,11 +95,13 @@ Les visualisations sont des composants **SVG maison** plutôt qu'une bibliothèq
 
 ## Accessibilité
 
-- Table en **ARIA grid** (`aria-rowcount`, `aria-rowindex`, `aria-sort`, `aria-activedescendant`) avec navigation clavier complète.
+- Table en **ARIA grid** (`aria-rowcount`, `aria-rowindex`, `aria-sort`, `aria-activedescendant`) avec navigation clavier par ligne (flèches, Page Up/Down, Début/Fin, Entrée).
+- Lien d'évitement vers le contenu principal ; raccourcis à une touche désactivables dans Réglages (WCAG 2.1.4).
 - Visualisations décrites textuellement ; points de la carte focusables et activables au clavier.
 - L'assistant annonce ses changements d'état via `role="status"` sans faire relire chaque token.
-- `prefers-reduced-motion` respecté ; la couleur ne porte jamais seule l'information ; contrastes vérifiés, y compris pour les contrôles (WCAG 1.4.11).
-- **Audit axe WCAG 2 AA** automatisé en e2e, en desktop et en mobile.
+- `prefers-reduced-motion` respecté ; la couleur ne porte jamais seule l'information ; contrastes visés, y compris pour les contrôles (WCAG 1.4.11).
+- **Audit axe WCAG 2.0 à 2.2, niveaux A et AA** automatisé en e2e, en desktop et en mobile, y compris avec une réponse de l'assistant et la fiche d'exigence ouverte.
+- Limites : un audit automatisé ne détecte qu'une partie des défauts. Aucun audit manuel ni test aux lecteurs d'écran n'a été mené ; le projet ne revendique donc pas de conformité RGAA.
 
 ## Design system
 

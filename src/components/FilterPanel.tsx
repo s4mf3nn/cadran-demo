@@ -119,9 +119,9 @@ function RiskSelector() {
 }
 
 const DUE_OPTIONS: { value: DueWithin; label: string; name: string }[] = [
-  { value: 30, label: '30 j', name: 'Échéance sous 30 jours' },
-  { value: 90, label: '90 j', name: 'Échéance sous 90 jours' },
-  { value: 365, label: '12 mois', name: 'Échéance sous 12 mois' },
+  { value: 30, label: '30 j', name: 'sous 30 jours' },
+  { value: 90, label: '90 j', name: 'sous 90 jours' },
+  { value: 365, label: '12 mois', name: 'sous 12 mois' },
 ];
 
 export function FilterPanel({ aggregates }: { aggregates?: Aggregates }) {
@@ -213,7 +213,6 @@ export function FilterPanel({ aggregates }: { aggregates?: Aggregates }) {
                   key={o.value}
                   type="button"
                   aria-pressed={pressed}
-                  aria-label={o.name}
                   onClick={() => setDueWithin(o.value)}
                   className={cn(
                     'h-[42px] rounded-full px-4 text-body',
@@ -221,6 +220,8 @@ export function FilterPanel({ aggregates }: { aggregates?: Aggregates }) {
                   )}
                 >
                   {o.label}
+                  {/* Le nom accessible commence par le texte visible (WCAG 2.5.3). */}
+                  <span className="sr-only"> ({o.name})</span>
                 </button>
               );
             })}

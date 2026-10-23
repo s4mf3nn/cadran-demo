@@ -32,8 +32,8 @@ const nf = new Intl.NumberFormat('fr-FR');
 
 /**
  * Table virtualisée : quelle que soit la taille du résultat (150 000 lignes),
- * seules ~30 lignes existent dans le DOM. Accessible au clavier
- * (flèches, Page Up/Down, Home/End, Espace, Entrée) avec la sémantique ARIA grid.
+ * seules ~30 lignes existent dans le DOM. Navigation clavier par ligne
+ * (flèches haut/bas, Page Up/Down, Home/End, Espace, Entrée) avec la sémantique ARIA grid.
  */
 export const RequirementsTable = memo(function RequirementsTable({ rows, aggregates }: { rows: Requirement[]; aggregates?: Aggregates }) {
   const parentRef = useRef<HTMLDivElement>(null);
@@ -107,7 +107,8 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
       <div
         role="grid"
         aria-label="Exigences réglementaires"
-        aria-rowcount={rows.length + 1}
+        // En-tête + lignes ; sans résultat, une ligne porte le message.
+        aria-rowcount={Math.max(rows.length, 1) + 1}
         aria-activedescendant={rows.length ? `row-${rows[activeIndex]?.id}` : undefined}
         tabIndex={0}
         onKeyDown={onKeyDown}
@@ -139,7 +140,9 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
         </div>
 
         {rows.length === 0 ? (
-          <p className="p-6 text-center text-muted">Aucune exigence ne correspond aux filtres.</p>
+          <div role="row" aria-rowindex={2} className={MIN_WIDTH}>
+            <div role="gridcell" aria-colspan={COLUMNS.length + 1} className="p-6 text-center text-muted">Aucune exigence ne correspond aux filtres.</div>
+          </div>
         ) : (
           <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }} className={MIN_WIDTH}>
             {virtualizer.getVirtualItems().map((v) => {
