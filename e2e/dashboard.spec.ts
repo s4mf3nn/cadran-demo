@@ -1,5 +1,5 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { axeViolations } from './axe';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
@@ -134,7 +134,51 @@ test('« Trié par … » ouvre le menu de tri comme sur mobile', async ({ page 
   await expect(country).toHaveAttribute('aria-sort', 'descending');
 });
 
-test('aucune violation axe WCAG 2 AA (desktop)', async ({ page }) => {
-  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
-  expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).slice(0, 3).join(' | ')}`)).toEqual([]);
+test('aucune violation axe WCAG 2.2 AA (desktop)', async ({ page }) => {
+  expect(await axeViolations(page)).toEqual([]);
+});
+
+test('aucune violation axe avec une réponse de l’assistant puis la fiche ouverte', async ({ page }) => {
+  await page.locator('#assistant-input').fill('Quels pays sont les plus exposés ?');
+  await page.getByRole('button', { name: 'Envoyer' }).click();
+  // « Nouvelle conversation » ne remplace « Arrêter » qu'une fois la réponse complète : axe audite l'état final.
+  await expect(page.getByRole('button', { name: 'Nouvelle conversation' })).toBeVisible({ timeout: 15_000 });
+  expect(await axeViolations(page)).toEqual([]);
+  await page.getByRole('row').nth(1).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  expect(await axeViolations(page)).toEqual([]);
+});
+
+test('le lien d’évitement est le premier arrêt de tabulation et mène au contenu', async ({ page }) => {
+  await page.keyboard.press('Tab');
+  const skip = page.getByRole('link', { name: 'Aller au contenu principal' });
+  await expect(skip).toBeFocused();
+  await expect(skip).toBeVisible();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('main')).toBeFocused();
+});
+
+test('les raccourcis à une touche se désactivent dans Réglages (WCAG 2.1.4)', async ({ page }) => {
+  await page.getByRole('button', { name: 'Réglages' }).click();
+  const item = page.getByRole('menuitemcheckbox', { name: 'Raccourcis à une touche' });
+  await expect(item).toHaveAttribute('aria-checked', 'true');
+  await item.click();
+  await expect(item).toHaveAttribute('aria-checked', 'false');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('/');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  // Les combinaisons avec ⌘/Ctrl restent actives, et le réglage survit au rechargement.
+  await page.keyboard.press('Control+j');
+  await expect(page.locator('#assistant-input')).toBeFocused();
+  await page.reload();
+  await expect(page.getByRole('grid', { name: 'Exigences réglementaires' })).toBeVisible({ timeout: 15_000 });
+  await page.keyboard.press('?');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  // Les suggestions n'annoncent plus 1–3, et l'aide présente les touches simples comme désactivées.
+  await expect(page.locator('#assistant-suggestions [aria-keyshortcuts]')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Réglages' }).click();
+  await page.getByRole('menuitem', { name: 'Raccourcis clavier' }).click();
+  const help = page.getByRole('dialog', { name: 'Raccourcis clavier' });
+  await expect(help.getByText('Rechercher (désactivé)')).toBeVisible();
+  await expect(help.getByText("Poser une question à l'assistant", { exact: true })).toBeVisible();
 });

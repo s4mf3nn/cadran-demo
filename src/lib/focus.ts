@@ -1,5 +1,8 @@
 import { useUi } from '../store/ui';
 
+/** Cible du lien d'évitement : le <main> des deux mises en page. */
+export const MAIN_ID = 'contenu';
+
 export const isMobileViewport = () => window.matchMedia('(max-width: 767px)').matches;
 
 /** Ouvre le panneau (ou le tiroir sur mobile) qui contient l'élément, puis lui donne le focus une fois monté. */

@@ -23,4 +23,13 @@ describe('matchShortcut', () => {
     expect(press({ key: 'Escape' }, input)).toBe('escape');
     expect(press({ key: 'j', metaKey: true }, input)).toBe('focusAssistant');
   });
+
+  it('désactive les touches simples sur demande, mais garde Échap et ⌘/Ctrl', () => {
+    const off = (init: KeyboardEventInit) => matchShortcut(new KeyboardEvent('keydown', init), { charKeys: false })?.id;
+    expect(off({ key: '/' })).toBeUndefined();
+    expect(off({ key: '1' })).toBeUndefined();
+    expect(off({ key: '?', shiftKey: true })).toBeUndefined();
+    expect(off({ key: 'Escape' })).toBe('escape');
+    expect(off({ key: 'j', ctrlKey: true })).toBe('focusAssistant');
+  });
 });

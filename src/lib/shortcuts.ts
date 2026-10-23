@@ -40,13 +40,19 @@ export const keyLabel = (s: Shortcut): string[] => {
 
 const FIELD = 'input, textarea, select, [contenteditable=""], [contenteditable="true"], [role="combobox"]';
 
-/** Renvoie le raccourci correspondant à l'événement, ou undefined. Ignore les touches simples dans un champ (sauf Échap). */
-export function matchShortcut(e: KeyboardEvent): Shortcut | undefined {
+/** Raccourci à une touche caractère, au sens de WCAG 2.1.4 (lettre, chiffre, ponctuation, sans ⌘/Ctrl). */
+export const isCharKey = (s: Shortcut) => !s.mod && s.key.length === 1;
+
+/**
+ * Renvoie le raccourci correspondant à l'événement, ou undefined. Ignore les touches simples dans un champ (sauf Échap),
+ * et partout quand `charKeys` est faux (réglage utilisateur).
+ */
+export function matchShortcut(e: KeyboardEvent, { charKeys = true }: { charKeys?: boolean } = {}): Shortcut | undefined {
   if (e.defaultPrevented || e.isComposing || e.altKey) return undefined;
   const mod = e.metaKey || e.ctrlKey;
   const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   const s = SHORTCUTS.find((c) => c.key === key && !!c.mod === mod);
-  if (!s) return undefined;
+  if (!s || (!charKeys && isCharKey(s))) return undefined;
   const inField = e.target instanceof Element && e.target.closest(FIELD) != null;
   if (inField && !s.mod && s.key !== 'Escape') return undefined;
   return s;

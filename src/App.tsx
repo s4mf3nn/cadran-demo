@@ -14,11 +14,13 @@ import { useAssistant, SUGGESTIONS } from './hooks/useAssistant';
 import { useHotkeys } from './hooks/useHotkeys';
 import { useIsMobile } from './hooks/useIsMobile';
 import { MobileLayout } from './components/layout/MobileLayout';
-import { focusIn } from './lib/focus';
+import { focusIn, MAIN_ID } from './lib/focus';
 import { useUi } from './store/ui';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+
+const SKIP_LINK = 'sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-full focus:bg-foreground focus:px-5 focus:py-3 focus:text-body focus:font-medium focus:text-background';
 
 export default function App() {
   const { rows, aggregates, timings, datasetSize, isLoading, isRefreshing, error } = useCadranData();
@@ -32,6 +34,7 @@ export default function App() {
     assistant.send(SUGGESTIONS[i]!);
   };
 
+  // Sous 768 px, ni aide ni réglage des raccourcis : les touches simples y sont coupées (WCAG 2.1.4).
   useHotkeys({
     search: () => ui().setSearchOpen(true),
     help: () => ui().setHelpOpen(true),
@@ -41,10 +44,12 @@ export default function App() {
     suggestion2: suggest(1),
     suggestion3: suggest(2),
     escape: () => assistant.stop(),
-  });
+  }, { charKeys: !isMobile });
 
   return (
     <TooltipProvider>
+      {/* RGAA 12.7 : lien d'évitement, premier élément tabulable, visible au focus. */}
+      <a href={`#${MAIN_ID}`} className={SKIP_LINK}>Aller au contenu principal</a>
       {isMobile ? (
         <MobileLayout rows={rows} aggregates={aggregates} isLoading={isLoading} isRefreshing={isRefreshing} assistant={assistant} />
       ) : (
@@ -56,7 +61,7 @@ export default function App() {
         <div className="flex min-w-0 flex-1 flex-col gap-3.5">
           <AppHeader rows={rows} datasetSize={datasetSize} timings={timings} isRefreshing={isRefreshing} />
 
-          <main className="relative flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto">
+          <main id={MAIN_ID} tabIndex={-1} className="relative flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto outline-none">
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>Erreur : {String(error)}</AlertDescription>

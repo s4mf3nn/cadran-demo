@@ -6,7 +6,7 @@ import type { IconSvgElement } from '@hugeicons/react';
 import { focusIn } from '@/lib/focus';
 import { useFilters } from '@/store/filters';
 import { useUi } from '@/store/ui';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Icon } from '@/components/ui/icon';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -48,9 +48,11 @@ export function Brand() {
   );
 }
 
-/** Menu Réglages : réinitialisations et aide des raccourcis (ex-« Paramètres de vue »). */
+/** Menu Réglages : réinitialisations, aide des raccourcis et activation des raccourcis à une touche. */
 export function SettingsMenu({ side = 'bottom' }: { side?: 'right' | 'bottom' }) {
   const reset = useFilters((s) => s.reset);
+  const charKeys = useUi((s) => s.charKeys);
+  const setCharKeys = useUi((s) => s.setCharKeys);
   return (
     <DropdownMenu>
       <Tooltip>
@@ -67,6 +69,10 @@ export function SettingsMenu({ side = 'bottom' }: { side?: 'right' | 'bottom' })
         <DropdownMenuItem onSelect={reset}>Réinitialiser les filtres</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => useFilters.setState({ sort: { key: 'dueAt', dir: 'asc' } })}>Réinitialiser le tri</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => useUi.getState().setHelpOpen(true)}>Raccourcis clavier</DropdownMenuItem>
+        {/* WCAG 2.1.4 / RGAA 12.10 : les raccourcis à une touche doivent pouvoir être désactivés. */}
+        <DropdownMenuCheckboxItem checked={charKeys} onCheckedChange={(on) => setCharKeys(on === true)} onSelect={(e) => e.preventDefault()}>
+          Raccourcis à une touche
+        </DropdownMenuCheckboxItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

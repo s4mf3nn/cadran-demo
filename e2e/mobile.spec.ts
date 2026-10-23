@@ -1,5 +1,5 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { axeViolations } from './axe';
 
 test.use({ viewport: { width: 390, height: 844 } });
 test.beforeEach(async ({ page }) => {
@@ -17,8 +17,7 @@ test('la barre flottante ouvre les tiroirs Filtres et Assistant', async ({ page 
 
 test('aucune violation axe et aucune touche de raccourci affichée', async ({ page }) => {
   await expect(page.locator('kbd:visible')).toHaveCount(0);
-  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
-  expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).slice(0, 3).join(' | ')}`)).toEqual([]);
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test('les cibles tactiles font au moins 44 px', async ({ page }) => {
@@ -30,4 +29,10 @@ test('les cibles tactiles font au moins 44 px', async ({ page }) => {
       .map(({ el }) => `${el.tagName} ${el.getAttribute('aria-label') ?? el.textContent?.slice(0, 20)}`),
   );
   expect(small).toEqual([]);
+});
+
+test('les raccourcis à une touche sont coupés sur mobile (WCAG 2.1.4)', async ({ page }) => {
+  await page.keyboard.press('/');
+  await page.keyboard.press('?');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 });
