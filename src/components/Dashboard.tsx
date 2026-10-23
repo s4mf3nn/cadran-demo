@@ -85,7 +85,7 @@ export function TopCountries({ a, className }: { a: Aggregates; className?: stri
   const selected = useFilters((s) => s.filters.countries);
   const toggle = useFilters((s) => s.toggle);
   const top = a.byCountry.filter((c) => c.count > 0 || selected.includes(c.country)).slice(0, 6);
-  const max = top[0]?.count ?? 0;
+  const max = a.countryMax;
 
   return (
     <section aria-labelledby="top-countries-title" className={cn(CARD, 'flex min-h-0 flex-col px-5 pt-3.5 pb-2', className)}>

@@ -114,7 +114,7 @@ export function WorldMap({ a, className }: { a: Aggregates; className?: string }
       .map((c) => ({ x: POSITIONS[c.country][0], y: POSITIONS[c.country][1], count: c.count, item: c.country })),
     [a.byCountry, selected],
   );
-  const max = a.byCountry[0]?.count ?? 0;
+  const max = a.countryMax;
   // Groupes dessinés d'abord : les noms des pays passent au-dessus.
   const clusters = clusterPoints(points, CLUSTER_RADIUS / (view.k * px)).sort((a, b) => b.members.length - a.members.length);
 

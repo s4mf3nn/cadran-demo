@@ -25,11 +25,12 @@ const lowerTitle = (title: string) => {
 const matchesNeedle = (r: Requirement, needle: string, needleUpper: string) =>
   r.ref.includes(needleUpper) || lowerTitle(r.title).includes(needle);
 
-/** Tous les filtres sauf le statut (sert aussi aux volumes par statut du panneau de filtres). */
-function matchesExceptStatus(r: Requirement, f: Filters, needle: string, dueLimit: number, needleUpper = needle.toUpperCase()): boolean {
+const matchesCountry = (r: Requirement, f: Filters) => !f.countries.length || f.countries.includes(r.country);
+
+/** Tous les filtres sauf le statut et le pays (sert aussi aux volumes par statut et à l'échelle des pays). */
+function matchesBase(r: Requirement, f: Filters, needle: string, dueLimit: number, needleUpper = needle.toUpperCase()): boolean {
   if (r.risk < f.minRisk) return false;
   if (r.dueAt > dueLimit) return false;
-  if (f.countries.length && !f.countries.includes(r.country)) return false;
   if (f.categories.length && !f.categories.includes(r.category)) return false;
   if (f.regulations.length && !f.regulations.includes(r.regulation)) return false;
   if (needle && !matchesNeedle(r, needle, needleUpper)) return false;
@@ -42,7 +43,7 @@ const matchesStatus = (r: Requirement, f: Filters) => !f.statuses.length || f.st
 const dueLimitOf = (f: Filters, now: number) => (f.dueWithin == null ? Infinity : now + f.dueWithin * DAY);
 
 export function matches(r: Requirement, f: Filters, needle: string, now = Date.now()): boolean {
-  return matchesExceptStatus(r, f, needle, dueLimitOf(f, now)) && matchesStatus(r, f);
+  return matchesBase(r, f, needle, dueLimitOf(f, now)) && matchesCountry(r, f) && matchesStatus(r, f);
 }
 
 const STATUS_ORDER: Record<Status, number> = { conforme: 0, en_cours: 1, a_evaluer: 2, non_conforme: 3 };
@@ -147,6 +148,8 @@ export function runQuery(data: Requirement[], filters: Filters, sort: Sort, now 
   const countryIdx = new Map(COUNTRIES.map((c, i) => [c, i]));
   const categoryIdx = new Map(CATEGORIES.map((c, i) => [c, i]));
   const byCountry = new Uint32Array(COUNTRIES.length);
+  // Comme byCountry mais sans le filtre pays : fixe l'échelle de couleur et de taille des pays.
+  const countryFacets = new Uint32Array(COUNTRIES.length);
   const heat = new Uint32Array(COUNTRIES.length * CATEGORIES.length);
 
   const start = new Date(now);
@@ -160,9 +163,12 @@ export function runQuery(data: Requirement[], filters: Filters, sort: Sort, now 
 
   // Une seule passe sur le dataset pour le filtre et toutes les agrégations.
   for (const r of data) {
-    if (!matchesExceptStatus(r, filters, needle, dueLimit, needleUpper)) continue;
+    if (!matchesBase(r, filters, needle, dueLimit, needleUpper)) continue;
+    const inStatus = matchesStatus(r, filters);
+    if (inStatus && isAtRisk(r)) countryFacets[countryIdx.get(r.country)!]!++;
+    if (!matchesCountry(r, filters)) continue;
     statusFacets[r.status]++;
-    if (!matchesStatus(r, filters)) continue;
+    if (!inStatus) continue;
     kept.push(r);
     byStatus[r.status]++;
     byCategory[r.category]++;
@@ -196,6 +202,7 @@ export function runQuery(data: Requirement[], filters: Filters, sort: Sort, now 
       byRisk,
       overdueNonConforme,
       dueWithin90,
+      countryMax: countryFacets.reduce((m, n) => Math.max(m, n), 0),
       byCountry: COUNTRIES.map((country, i) => ({ country, count: byCountry[i]! }))
         .sort((a, b) => b.count - a.count),
       heatmap: COUNTRIES.flatMap((country, ci) =>

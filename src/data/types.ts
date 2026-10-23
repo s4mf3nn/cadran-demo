@@ -149,6 +149,8 @@ export interface Aggregates {
   dueWithin90: number;
   /** Exigences en risque (non conformes ou risque >= AT_RISK_MIN) par pays, triées décroissant. */
   byCountry: { country: Country; count: number }[];
+  /** Plus gros volume par pays sans le filtre pays : l'échelle ne bouge pas quand on filtre sur un pays. */
+  countryMax: number;
   /** Matrice pays x catégorie du nombre d'exigences en risque. */
   heatmap: { country: Country; category: Category; count: number }[];
   /** Échéances par mois sur les 12 prochains mois. */

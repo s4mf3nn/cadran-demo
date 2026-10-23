@@ -67,6 +67,15 @@ describe('runQuery', () => {
     }
   });
 
+  it("garde l'échelle des pays quand on filtre sur un pays", () => {
+    const all = runQuery(data, noFilter, byRef, NOW).aggregates;
+    const top = all.byCountry[0]!.country;
+    const other = all.byCountry.find((c) => c.country !== top && c.count > 0)!.country;
+    const one = runQuery(data, { ...noFilter, countries: [other] }, byRef, NOW).aggregates;
+    expect(one.countryMax).toBe(all.byCountry[0]!.count);
+    expect(one.byCountry[0]!.count).toBeLessThan(one.countryMax);
+  });
+
   it('recherche sans tenir compte de la casse', () => {
     const { indices } = runQuery(data, { ...noFilter, search: 'req-000042' }, byRef, NOW);
     expect(Array.from(indices, (i) => data[i]!.ref)).toEqual(['REQ-000042']);
