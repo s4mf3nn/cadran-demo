@@ -1,6 +1,6 @@
 # Cadran
 
-**[▶ Voir la démo en ligne](https://cadran-demo-nine.vercel.app/)**
+**[▶ Voir la démo en ligne](https://cadran-demo-nine.vercel.app/)** · **[📖 Storybook](https://cadran-demo-nine.vercel.app/storybook/)**
 
 Tableau de bord de pilotage de la conformité réglementaire : **jusqu'à 1 000 000 d'exigences** par pays, catégorie, statut, risque et échéance, avec un assistant IA en streaming. Projet de démonstration (données fictives, générées de façon déterministe).
 
@@ -30,12 +30,13 @@ npm install
 npm run dev          # http://localhost:5173 (sert aussi le faux endpoint IA en streaming)
 npm test             # tests unitaires et composants (Vitest + Testing Library)
 npm run e2e          # tests end-to-end (Playwright), après `npx playwright install chromium`
-npm run build        # typecheck + build de production
+npm run storybook    # http://localhost:6006 (catalogue des composants)
+npm run build        # typecheck + Storybook + build de production
 ```
 
 ## Stack
 
-React 19, TypeScript strict, Vite, Zustand, TanStack Query, d3-geo, Tailwind CSS v4, shadcn/ui (Radix UI), Vitest, React Testing Library, Playwright, GitHub Actions.
+React 19, TypeScript strict, Vite, Zustand, TanStack Query, d3-geo, Tailwind CSS v4, shadcn/ui (Radix UI), Vitest, React Testing Library, Playwright, Storybook, GitHub Actions.
 
 ## Architecture
 
@@ -159,13 +160,14 @@ Dans la fiche d'une exigence, **Modifier** ouvre un formulaire (intitulé, statu
 - Tokens dans `src/index.css` exposés à Tailwind v4 via `@theme inline` (couleurs, échelle typographique, rayons). Les composants n'utilisent pas de valeurs arbitraires.
 - shadcn/ui sur Radix UI, avec ses tokens redirigés vers ceux du projet.
 - Mise en page en 3 zones sur bureau (filtres, tableau de bord, assistant), panneaux réductibles et mémorisés ; sur mobile, tiroirs, liste virtualisée et cibles tactiles de 44 px.
+- **Storybook** (`/storybook/`, déployé avec l'app) : les composants de données (`StatusTag`, `RiskMeter`), les visualisations (jauges, vagues, carte), les primitives `ui/*` et les composants riches (`FilterPanel`, `RequirementDetail`) avec leurs états, des `play` functions pour les interactions et l'addon a11y. Les stories s'appuient sur le même générateur déterministe que l'application ; l'état Zustand est préparé par story. Le build de Storybook fait partie de `npm run build` : une story cassée fait échouer la CI.
 - La table n'utilise pas le `Table` de shadcn : un vrai `<table>` est incompatible avec le positionnement absolu de la virtualisation. Elle garde une sémantique ARIA grid sur des `div`.
 
 ## Qualité et tests
 
 - **TypeScript strict** avec `noUncheckedIndexedAccess`.
 - **Pyramide de tests** : fonctions pures en unitaire (requêtes et agrégats, équivalence du tri par comptage avec le comparateur, génération, virtualisation à 1 M, géographie, codec d'URL, parseur SSE, raccourcis), composants avec Testing Library, parcours complets avec Playwright (filtres, édition d'une exigence et rechargement, état dans l'URL et historique, cohérence des totaux, nombre de lignes à 150 k et 1 M, absence de tâches longues à 1 M, carte, tri, raccourcis, annulation de l'assistant, mobile, accessibilité).
-- **CI GitHub Actions** : typecheck, tests, build, puis e2e avec publication du rapport en cas d'échec.
+- **CI GitHub Actions** : typecheck, tests, build (Storybook inclus), puis e2e avec publication du rapport en cas d'échec.
 
 ### Retours d'expérience : des bugs révélés par l'e2e
 
@@ -183,4 +185,3 @@ Le test « l'assistant peut être interrompu » a mis au jour un défaut réel. 
 - Découpage du bundle (`import()` dynamique de la carte et de l'assistant).
 - `SharedArrayBuffer` ou DuckDB-WASM au-delà du million de lignes.
 - WebSocket à la place de SSE pour un dialogue bidirectionnel, avec la même machine à états.
-- Storybook pour documenter les composants.

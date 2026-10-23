@@ -5,3 +5,4 @@ playwright-report
 .vercel
 .env*
 tsconfig.tsbuildinfo
+public/storybook

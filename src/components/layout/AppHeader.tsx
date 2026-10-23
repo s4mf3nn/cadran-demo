@@ -1,4 +1,4 @@
-import { Download04Icon, Github01Icon, SparklesIcon } from '@hugeicons/core-free-icons';
+import { BookOpen01Icon, Download04Icon, Github01Icon, SparklesIcon } from '@hugeicons/core-free-icons';
 import { exportCsv } from '@/lib/exportCsv';
 import { focusIn } from '@/lib/focus';
 import { useUi } from '@/store/ui';
@@ -8,6 +8,9 @@ import { nf } from '../viz/format';
 import { RIGHT_PANEL_ID } from './RightPanel';
 
 export interface Timings { init?: number; query?: number }
+
+/** En ligne, Storybook est publié avec l'app sous /storybook/ ; en dev, c'est `npm run storybook` (port 6006). */
+const STORYBOOK_URL = import.meta.env.DEV ? 'http://localhost:6006' : '/storybook/';
 
 const PILL = 'inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-5 text-body font-medium';
 
@@ -37,6 +40,11 @@ export function AppHeader({ rows, datasetSize, timings, isRefreshing }: { rows: 
         <a href="https://github.com/s4mf3nn/cadran-demo" target="_blank" rel="noopener" className={`${PILL} border-[1.5px] border-track hover:bg-surface`}>
           <Icon icon={Github01Icon} size={20} />
           GitHub
+          <span className="sr-only"> (s'ouvre dans un nouvel onglet)</span>
+        </a>
+        <a href={STORYBOOK_URL} target="_blank" rel="noopener" className={`${PILL} border-[1.5px] border-track hover:bg-surface`}>
+          <Icon icon={BookOpen01Icon} size={20} />
+          Storybook
           <span className="sr-only"> (s'ouvre dans un nouvel onglet)</span>
         </a>
         <button
