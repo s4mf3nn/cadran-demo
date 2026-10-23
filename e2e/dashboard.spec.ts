@@ -234,3 +234,15 @@ test('les raccourcis à une touche se désactivent dans Réglages (WCAG 2.1.4)',
   await expect(help.getByText('Rechercher (désactivé)')).toBeVisible();
   await expect(help.getByText("Poser une question à l'assistant", { exact: true })).toBeVisible();
 });
+
+test('filtres, tri et fiche vivent dans l\'URL et suivent précédent/suivant', async ({ page }) => {
+  await page.goto('/?statut=non_conforme&tri=risk.desc&fiche=5');
+  await expect(page.getByRole('dialog')).toContainText('REQ-000006');
+  await page.keyboard.press('Escape');
+  await expect(page).not.toHaveURL(/fiche=/);
+  await expect(page).toHaveURL(/statut=non_conforme/);
+  await page.goBack();
+  await expect(page.getByRole('dialog')).toContainText('REQ-000006');
+  await page.goForward();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
