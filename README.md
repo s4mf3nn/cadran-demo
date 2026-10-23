@@ -72,9 +72,12 @@ Le sélecteur flottant `150 k | 1 M` régénère le référentiel dans le worker
 | Génération (worker) | ~200 ms |
 | Requête complète : filtre + tri + agrégats (worker) | ~30 à 100 ms |
 | Passage 150 k → 1 M, du clic à l'affichage | < 1 s |
-| Tâches longues (> 50 ms) sur le main thread : passage à 1 M, saisie d'une recherche, zoom et déplacement de la carte, tri, filtre, navigation jusqu'en fin de table | aucune |
+| Tâches longues (> 50 ms) sur le main thread : passage à 1 M, saisie d'une recherche, zoom et déplacement de la carte, tri, filtre, navigation jusqu'en fin de table | aucune, vérifié en CI |
 
-Un test e2e vérifie à chaque palier, dans les deux sens, que la table contient exactement le nombre d'exigences annoncé et que la dernière ligne est bien `REQ-1000000`.
+Deux tests e2e en font des garanties :
+
+- **Aucune tâche longue** (`e2e/performance.spec.ts`) : un `PerformanceObserver` de la Long Tasks API rejoue chacune de ces interactions à 1 M et échoue si l'une bloque le main thread plus de 50 ms, en nommant l'étape fautive. Le test tourne seul, après les autres, pour qu'aucun navigateur parallèle ne fausse la mesure. Vérifié dans l'autre sens : 80 ms de calcul synchrone ajoutées au tri le font bien échouer.
+- **Le bon nombre de lignes** : à chaque palier, dans les deux sens, la table contient exactement le nombre d'exigences annoncé et la dernière ligne est bien `REQ-1000000`.
 
 ### Comment
 
@@ -133,7 +136,7 @@ Les visualisations sont des composants **SVG maison** plutôt qu'une bibliothèq
 ## Qualité et tests
 
 - **TypeScript strict** avec `noUncheckedIndexedAccess`.
-- **Pyramide de tests** : fonctions pures en unitaire (requêtes et agrégats, équivalence du tri par comptage avec le comparateur, génération, virtualisation à 1 M, géographie, parseur SSE, raccourcis), composants avec Testing Library, parcours complets avec Playwright (filtres, cohérence des totaux, nombre de lignes à 150 k et 1 M, carte, tri, raccourcis, annulation de l'assistant, mobile, accessibilité).
+- **Pyramide de tests** : fonctions pures en unitaire (requêtes et agrégats, équivalence du tri par comptage avec le comparateur, génération, virtualisation à 1 M, géographie, parseur SSE, raccourcis), composants avec Testing Library, parcours complets avec Playwright (filtres, cohérence des totaux, nombre de lignes à 150 k et 1 M, absence de tâches longues à 1 M, carte, tri, raccourcis, annulation de l'assistant, mobile, accessibilité).
 - **CI GitHub Actions** : typecheck, tests, build, puis e2e avec publication du rapport en cas d'échec.
 
 ### Retours d'expérience : des bugs révélés par l'e2e
