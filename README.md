@@ -1,10 +1,12 @@
 # Cadran
 
-Tableau de bord de pilotage de la conformité réglementaire : de 150 000 à 1 000 000 d'exigences par pays, catégorie, statut, risque et échéance, avec un assistant IA en streaming. Projet de démonstration (données fictives, générées de façon déterministe).
+Tableau de bord de pilotage de la conformité réglementaire : **jusqu'à 1 000 000 d'exigences** par pays, catégorie, statut, risque et échéance, avec un assistant IA en streaming. Projet de démonstration (données fictives, générées de façon déterministe).
+
+> **Montée en charge en un clic** : le sélecteur flottant `150 k | 1 M`, en bas à droite, régénère le référentiel à 1 million d'exigences. Filtres, tri, recherche, carte et table restent fluides : aucune tâche longue sur le main thread.
 
 Ce qu'il met en avant :
 
-- **Performance** : gros volume de données traité côté client sans bloquer l'interface (Web Worker, transferts sans copie, virtualisation).
+- **Performance** : 1 million d'exigences filtrées, triées et agrégées côté client sans bloquer l'interface (Web Worker, données en colonnes transférées sans copie, tri en O(n), virtualisation sans plafond de volume).
 - **Visualisation de données** sur mesure en SVG, dont une carte du monde interactive avec regroupement et zoom.
 - **Intégration IA** en streaming (SSE, machine à états, annulation).
 - **Accessibilité** visée WCAG 2.2 AA (ARIA grid, navigation clavier, audit axe automatisé) et **tests** unitaires, de composants et end-to-end.
@@ -29,7 +31,7 @@ npm run build        # typecheck + build de production
 
 ## Stack
 
-React 19, TypeScript strict, Vite, Zustand, TanStack Query, TanStack Virtual, d3-geo, Tailwind CSS v4, shadcn/ui (Radix UI), Vitest, React Testing Library, Playwright, GitHub Actions.
+React 19, TypeScript strict, Vite, Zustand, TanStack Query, d3-geo, Tailwind CSS v4, shadcn/ui (Radix UI), Vitest, React Testing Library, Playwright, GitHub Actions.
 
 ## Architecture
 
@@ -41,7 +43,7 @@ React 19, TypeScript strict, Vite, Zustand, TanStack Query, TanStack Virtual, d3
 │        │                                    │                   │
 │        └──────────► lib/dataWorker (RPC par Promise) ◄──────────┤
 └──────────────────────────────┬──────────────────────────────────┘
-                               │ postMessage (Uint32Array transféré)
+                               │ postMessage : colonnes (typed arrays) puis index (Uint32Array), transférés sans copie
 ┌──────────────────────────────▼──────────────────────────────────┐
 │  Web Worker : 150 k à 1 M exigences, filtre + tri + agrégats    │
 │  src/data/query.ts : fonctions pures, testables sans navigateur │
@@ -59,8 +61,22 @@ Les choix structurants :
 
 ## Performance
 
+### Jusqu'à 1 000 000 d'exigences
+
+Le sélecteur flottant `150 k | 1 M` régénère le référentiel dans le worker ; l'ancien reste affiché pendant la génération. Mesures à 1 M dans Chromium (Playwright, poste de développement) :
+
+| | 1 000 000 d'exigences |
+| --- | --- |
+| Génération (worker) | ~200 ms |
+| Requête complète : filtre + tri + agrégats (worker) | ~30 à 100 ms |
+| Passage 150 k → 1 M, du clic à l'affichage | < 1 s |
+| Tâches longues (> 50 ms) sur le main thread : passage à 1 M, saisie d'une recherche, zoom et déplacement de la carte, tri, filtre, navigation jusqu'en fin de table | aucune |
+
+Un test e2e vérifie à chaque palier, dans les deux sens, que la table contient exactement le nombre d'exigences annoncé et que la dernière ligne est bien `REQ-1000000`.
+
+### Comment
+
 - Filtre, tri et toutes les agrégations en **une seule passe** dans un **Web Worker**.
-- **Montée en charge en un clic** : le sélecteur flottant `150 k | 1 M` (en bas à droite) régénère le référentiel à 150 000 ou 1 000 000 d'exigences ; l'ancien reste affiché pendant la génération.
 - Le main thread ne reçoit jamais d'objets : le worker lui **transfère** le référentiel **en colonnes** (typed arrays, ~13 octets par exigence), puis chaque requête ne renvoie qu'un `Uint32Array` d'index. Les lignes sont reconstruites à la demande (`RowSet`) : seule la trentaine affichée par la table existe en mémoire.
 - Tri **par comptage** en O(n) (toutes les clés sont de faible cardinalité) : environ 20 ms à 1 M de lignes, contre environ 200 ms pour `sort` + `localeCompare` (mesuré sous Node).
 - Table **virtualisée** : une trentaine de lignes dans le DOM quel que soit le volume, ce qu'un test vérifie. Au-delà de 15 M px (1 M de lignes = 46 M px, plus que la hauteur maximale d'un élément dans Chrome ou Firefox), la hauteur défilable est plafonnée et le défilement mis à l'échelle (`src/hooks/useFixedVirtual.ts`) : la dernière ligne reste atteignable.
@@ -115,10 +131,14 @@ Les visualisations sont des composants **SVG maison** plutôt qu'une bibliothèq
 ## Qualité et tests
 
 - **TypeScript strict** avec `noUncheckedIndexedAccess`.
-- **Pyramide de tests** : fonctions pures en unitaire (requêtes et agrégats, génération, géographie, parseur SSE, raccourcis), composants avec Testing Library, parcours complets avec Playwright (filtres, cohérence des totaux, carte, tri, raccourcis, annulation de l'assistant, mobile, accessibilité).
+- **Pyramide de tests** : fonctions pures en unitaire (requêtes et agrégats, équivalence du tri par comptage avec le comparateur, génération, virtualisation à 1 M, géographie, parseur SSE, raccourcis), composants avec Testing Library, parcours complets avec Playwright (filtres, cohérence des totaux, nombre de lignes à 150 k et 1 M, carte, tri, raccourcis, annulation de l'assistant, mobile, accessibilité).
 - **CI GitHub Actions** : typecheck, tests, build, puis e2e avec publication du rapport en cas d'échec.
 
-### Retour d'expérience : un bug révélé par l'e2e
+### Retours d'expérience : des bugs révélés par l'e2e
+
+**La fin du tableau inatteignable à 1 M.** En vérifiant qu'à chaque palier la table contient le bon nombre de lignes, la touche Fin s'arrêtait à la ligne 729 456 sur 1 000 000. Cause : 1 M de lignes de 46 px font 46 M px, au-delà de la hauteur maximale d'un élément (≈ 33,5 M px dans Chrome, ≈ 17,9 M px dans Firefox). Correctif : une virtualisation à hauteur fixe (`src/hooks/useFixedVirtual.ts`) qui plafonne la hauteur défilable à 15 M px et met la position de défilement à l'échelle. En dessous du plafond, le comportement est inchangé.
+
+**Stop qui relançait la requête.**
 
 Le test « l'assistant peut être interrompu » a mis au jour un défaut réel. Les boutons « Analyser » (`type="submit"`) et « Stop » (`type="button"`) occupaient le même emplacement d'un ternaire : React réutilisait le même nœud DOM, si bien qu'un clic sur Stop soumettait le formulaire et relançait une requête au lieu d'annuler. Correctif : une `key` distincte par bouton et une garde dans `onSubmit`. Depuis, « Arrêter » vit hors du formulaire, ce qui supprime le piège à la source ; la garde reste en défense.
 
