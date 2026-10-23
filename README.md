@@ -96,7 +96,7 @@ Les visualisations sont des composants **SVG maison** plutôt qu'une bibliothèq
 ## Accessibilité
 
 - Table en **ARIA grid** (`aria-rowcount`, `aria-rowindex`, `aria-sort`, `aria-activedescendant`) avec navigation clavier par ligne (flèches, Page Up/Down, Début/Fin, Entrée).
-- Lien d'évitement vers le contenu principal ; raccourcis à une touche désactivables dans Réglages (WCAG 2.1.4).
+- Lien d'évitement vers le contenu principal ; raccourcis à une touche désactivables dans Réglages et coupés d'office sur mobile (WCAG 2.1.4).
 - Visualisations décrites textuellement ; points de la carte focusables et activables au clavier.
 - L'assistant annonce ses changements d'état via `role="status"` sans faire relire chaque token.
 - `prefers-reduced-motion` respecté ; la couleur ne porte jamais seule l'information ; contrastes visés, y compris pour les contrôles (WCAG 1.4.11).
