@@ -1,5 +1,7 @@
 # Cadran
 
+**[▶ Voir la démo en ligne](https://cadran-demo-nine.vercel.app/)**
+
 Tableau de bord de pilotage de la conformité réglementaire : **jusqu'à 1 000 000 d'exigences** par pays, catégorie, statut, risque et échéance, avec un assistant IA en streaming. Projet de démonstration (données fictives, générées de façon déterministe).
 
 > **Montée en charge en un clic** : le sélecteur flottant `150 k | 1 M`, en bas à droite, régénère le référentiel à 1 million d'exigences. Filtres, tri, recherche, carte et table restent fluides : aucune tâche longue sur le main thread.
