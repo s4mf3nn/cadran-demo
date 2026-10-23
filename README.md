@@ -10,6 +10,7 @@ Ce qu'il met en avant :
 
 - **Performance** : 1 million d'exigences filtrées, triées et agrégées côté client sans bloquer l'interface (Web Worker, données en colonnes transférées sans copie, tri en O(n), virtualisation sans plafond de volume).
 - **Visualisation de données** sur mesure en SVG, dont une carte du monde interactive avec regroupement et zoom.
+- **Vues partageables** : filtres, tri et fiche ouverte vivent dans l'URL. Un lien reproduit la vue à l'identique, et les boutons précédent/suivant du navigateur la rejouent.
 - **Intégration IA** en streaming (SSE, machine à états, annulation).
 - **Accessibilité** visée WCAG 2.2 AA (ARIA grid, navigation clavier, audit axe automatisé) et **tests** unitaires, de composants et end-to-end.
 
@@ -59,6 +60,7 @@ Les choix structurants :
 - **Les calculs sortent du main thread.** Le worker est exposé comme un backend asynchrone via une petite couche RPC (`src/lib/dataWorker.ts`) : chaque appel renvoie une `Promise`, branchée directement dans React Query (cache, annulation, états de chargement). Remplacer le worker par une vraie API HTTP ne changerait que cette couche.
 - **La logique métier est pure.** `src/data/query.ts` et `src/lib/geo.ts` n'importent ni React ni le DOM : ils tournent dans le worker ou le navigateur et se testent directement en Vitest.
 - **Un état par nature.** Zustand pour l'état synchrone (filtres, panneaux), React Query pour l'asynchrone, avec des sélecteurs ciblés pour éviter les re-rendus en cascade.
+- **L'URL reflète la vue.** Filtres, tri et fiche ouverte sont synchronisés avec la query string (`src/lib/urlState.ts`, `src/hooks/useUrlState.ts`) : le store Zustand reste la source de vérité de l'interface, l'URL en est le miroir partageable.
 - **Une source unique pour les raccourcis** (`src/lib/shortcuts.ts`) : le même registre alimente le gestionnaire clavier et la boîte d'aide `?`, qui ne peuvent donc pas diverger.
 
 ## Performance
@@ -106,6 +108,21 @@ Les visualisations sont des composants **SVG maison** plutôt qu'une bibliothèq
 - Zoom, déplacement à la souris ou au doigt, sans que le glisser ne déclenche de clic parasite.
 - Regroupement et calcul du zoom sont des fonctions pures testées unitairement.
 
+## Vues partageables (état dans l'URL)
+
+Chaque vue a une adresse : on la copie, on l'envoie, on la retrouve. Exemple :
+
+```
+?pays=France,Italie&statut=non_conforme&risque=4&echeance=90&tri=risk.desc&fiche=1234
+```
+
+- **Clés lisibles** : `q`, `pays`, `categorie`, `statut`, `reglementation`, `risque`, `echeance`, `tri` (`clé.sens`) et `fiche`. Seuls les écarts avec l'état initial apparaissent : la vue par défaut a une URL propre.
+- **Précédent/suivant** : chaque changement de filtre, de tri ou de fiche ajoute une entrée d'historique, et `popstate` rejoue l'état, fiche comprise. La saisie dans la recherche *remplace* l'entrée courante au lieu d'en empiler une par frappe.
+- **Fiche reconstruite à la demande** : l'URL ne porte que l'identifiant ; l'exigence est relue dans les colonnes du référentiel dès qu'elles sont chargées, y compris sur un lien ouvert à froid.
+- **URL tolérante** : valeurs inconnues, risque hors plage ou identifiant inexistant sont ignorés, sans erreur.
+- **Codec pur** : `encodeUrlState` / `decodeUrlState` n'ont aucune dépendance au DOM ; aller-retour et cas invalides sont couverts en Vitest, et un test e2e rejoue ouverture, fermeture, retour et avance.
+- Limite assumée : la taille du jeu (150 k ou 1 M) n'est pas dans l'URL, la démo repartant toujours de 150 000 exigences.
+
 ## Intégration IA en streaming
 
 - Consommation **SSE via `fetch` et `ReadableStream`** plutôt qu'`EventSource`, qui ne gère ni le POST ni l'annulation.
@@ -136,7 +153,7 @@ Les visualisations sont des composants **SVG maison** plutôt qu'une bibliothèq
 ## Qualité et tests
 
 - **TypeScript strict** avec `noUncheckedIndexedAccess`.
-- **Pyramide de tests** : fonctions pures en unitaire (requêtes et agrégats, équivalence du tri par comptage avec le comparateur, génération, virtualisation à 1 M, géographie, parseur SSE, raccourcis), composants avec Testing Library, parcours complets avec Playwright (filtres, cohérence des totaux, nombre de lignes à 150 k et 1 M, absence de tâches longues à 1 M, carte, tri, raccourcis, annulation de l'assistant, mobile, accessibilité).
+- **Pyramide de tests** : fonctions pures en unitaire (requêtes et agrégats, équivalence du tri par comptage avec le comparateur, génération, virtualisation à 1 M, géographie, codec d'URL, parseur SSE, raccourcis), composants avec Testing Library, parcours complets avec Playwright (filtres, état dans l'URL et historique, cohérence des totaux, nombre de lignes à 150 k et 1 M, absence de tâches longues à 1 M, carte, tri, raccourcis, annulation de l'assistant, mobile, accessibilité).
 - **CI GitHub Actions** : typecheck, tests, build, puis e2e avec publication du rapport en cas d'échec.
 
 ### Retours d'expérience : des bugs révélés par l'e2e

@@ -14,6 +14,7 @@ import { DatasetScaler } from './components/DatasetScaler';
 import { useAssistant, SUGGESTIONS } from './hooks/useAssistant';
 import { useHotkeys } from './hooks/useHotkeys';
 import { useIsMobile } from './hooks/useIsMobile';
+import { useUrlState } from './hooks/useUrlState';
 import { MobileLayout } from './components/layout/MobileLayout';
 import { focusIn, MAIN_ID } from './lib/focus';
 import { useUi } from './store/ui';
@@ -25,6 +26,7 @@ const SKIP_LINK = 'sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-
 
 export default function App() {
   const { rows, aggregates, timings, datasetSize, requestedSize, isScaling, isLoading, isRefreshing, error } = useCadranData();
+  useUrlState();
   const ui = useUi.getState;
   const isMobile = useIsMobile();
   const assistant = useAssistant(aggregates);
