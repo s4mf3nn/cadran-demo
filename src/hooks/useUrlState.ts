@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
+import { applyEdit } from '../data/edits';
 import { rowAt, type Columns } from '../data/generate';
 import { decodeUrlState, encodeUrlState } from '../lib/urlState';
+import { useEdits } from '../store/edits';
 import { useFilters } from '../store/filters';
 import { useDataset } from './useCadranData';
 
@@ -17,7 +19,7 @@ function resolvePending() {
   pendingOpenId = null;
   if (id < loadedColumns.status.length) {
     useFilters.setState({ selectedId: id });
-    useFilters.getState().open(rowAt(loadedColumns, id));
+    useFilters.getState().open(applyEdit(rowAt(loadedColumns, id), useEdits.getState().edits[id]));
   }
 }
 

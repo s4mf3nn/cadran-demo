@@ -11,6 +11,7 @@ Ce qu'il met en avant :
 - **Performance** : 1 million d'exigences filtrées, triées et agrégées côté client sans bloquer l'interface (Web Worker, données en colonnes transférées sans copie, tri en O(n), virtualisation sans plafond de volume).
 - **Visualisation de données** sur mesure en SVG, dont une carte du monde interactive avec regroupement et zoom.
 - **Vues partageables** : filtres, tri et fiche ouverte vivent dans l'URL. Un lien reproduit la vue à l'identique, et les boutons précédent/suivant du navigateur la rejouent.
+- **Exigences modifiables** : statut, risque, échéance, intitulé, pays, catégorie et réglementation s'éditent depuis la fiche. Les modifications sont conservées dans le navigateur et se répercutent sur la table, les filtres et tous les agrégats, même à 1 M de lignes.
 - **Intégration IA** en streaming (SSE, machine à états, annulation).
 - **Accessibilité** visée WCAG 2.2 AA (ARIA grid, navigation clavier, audit axe automatisé) et **tests** unitaires, de composants et end-to-end.
 
@@ -61,6 +62,7 @@ Les choix structurants :
 - **La logique métier est pure.** `src/data/query.ts` et `src/lib/geo.ts` n'importent ni React ni le DOM : ils tournent dans le worker ou le navigateur et se testent directement en Vitest.
 - **Un état par nature.** Zustand pour l'état synchrone (filtres, panneaux), React Query pour l'asynchrone, avec des sélecteurs ciblés pour éviter les re-rendus en cascade.
 - **L'URL reflète la vue.** Filtres, tri et fiche ouverte sont synchronisés avec la query string (`src/lib/urlState.ts`, `src/hooks/useUrlState.ts`) : le store Zustand reste la source de vérité de l'interface, l'URL en est le miroir partageable.
+- **Les modifications sont une couche, pas une réécriture.** Le référentiel reste généré et immuable ; les éditions vivent à part (`src/store/edits.ts`) et se superposent à lui (`applyEdit`) côté worker et côté affichage.
 - **Une source unique pour les raccourcis** (`src/lib/shortcuts.ts`) : le même registre alimente le gestionnaire clavier et la boîte d'aide `?`, qui ne peuvent donc pas diverger.
 
 ## Performance
@@ -123,6 +125,15 @@ Chaque vue a une adresse : on la copie, on l'envoie, on la retrouve. Exemple :
 - **Codec pur** : `encodeUrlState` / `decodeUrlState` n'ont aucune dépendance au DOM ; aller-retour et cas invalides sont couverts en Vitest, et un test e2e rejoue ouverture, fermeture, retour et avance.
 - Limite assumée : la taille du jeu (150 k ou 1 M) n'est pas dans l'URL, la démo repartant toujours de 150 000 exigences.
 
+## Édition des exigences
+
+Dans la fiche d'une exigence, **Modifier** ouvre un formulaire (intitulé, statut, risque, échéance, réglementation, pays, catégorie). La référence reste celle du référentiel.
+
+- **Une couche par-dessus le référentiel** : les modifications sont une table `id → champs modifiés` (`src/data/edits.ts`), persistée dans `localStorage` (clé `cadran:edits`, relue avec validation : ids, champs et valeurs inconnus sont écartés). Les ids sont stables, le jeu étant déterministe, et les 150 000 premières lignes sont communes aux deux paliers : une modification survit au rechargement et au changement de palier.
+- **Cohérence avec les calculs** : chaque requête au worker porte les modifications et leur version. Le worker remplace les lignes concernées avant de filtrer, trier et agréger, et restaure les lignes d'origine quand une modification disparaît. Table, filtres, jauges, carte et échéances reflètent donc les valeurs éditées. La fiche ouverte se met à jour immédiatement, sans attendre le recalcul.
+- **Rétablir l'original** efface les modifications d'une exigence. Changer la réglementation sans toucher à l'intitulé met à jour le suffixe de l'intitulé (« Sujet (REACH) »).
+- **Limites assumées** : pas de serveur, les modifications restent locales à ce navigateur ; l'assistant, qui travaille sur ses propres agrégats côté serveur, ne les voit pas ; ni ajout ni suppression d'exigences.
+
 ## Intégration IA en streaming
 
 - Consommation **SSE via `fetch` et `ReadableStream`** plutôt qu'`EventSource`, qui ne gère ni le POST ni l'annulation.
@@ -153,7 +164,7 @@ Chaque vue a une adresse : on la copie, on l'envoie, on la retrouve. Exemple :
 ## Qualité et tests
 
 - **TypeScript strict** avec `noUncheckedIndexedAccess`.
-- **Pyramide de tests** : fonctions pures en unitaire (requêtes et agrégats, équivalence du tri par comptage avec le comparateur, génération, virtualisation à 1 M, géographie, codec d'URL, parseur SSE, raccourcis), composants avec Testing Library, parcours complets avec Playwright (filtres, état dans l'URL et historique, cohérence des totaux, nombre de lignes à 150 k et 1 M, absence de tâches longues à 1 M, carte, tri, raccourcis, annulation de l'assistant, mobile, accessibilité).
+- **Pyramide de tests** : fonctions pures en unitaire (requêtes et agrégats, équivalence du tri par comptage avec le comparateur, génération, virtualisation à 1 M, géographie, codec d'URL, parseur SSE, raccourcis), composants avec Testing Library, parcours complets avec Playwright (filtres, édition d'une exigence et rechargement, état dans l'URL et historique, cohérence des totaux, nombre de lignes à 150 k et 1 M, absence de tâches longues à 1 M, carte, tri, raccourcis, annulation de l'assistant, mobile, accessibilité).
 - **CI GitHub Actions** : typecheck, tests, build, puis e2e avec publication du rapport en cas d'échec.
 
 ### Retours d'expérience : des bugs révélés par l'e2e
@@ -164,8 +175,11 @@ Chaque vue a une adresse : on la copie, on l'envoie, on la retrouve. Exemple :
 
 Le test « l'assistant peut être interrompu » a mis au jour un défaut réel. Les boutons « Analyser » (`type="submit"`) et « Stop » (`type="button"`) occupaient le même emplacement d'un ternaire : React réutilisait le même nœud DOM, si bien qu'un clic sur Stop soumettait le formulaire et relançait une requête au lieu d'annuler. Correctif : une `key` distincte par bouton et une garde dans `onSubmit`. Depuis, « Arrêter » vit hors du formulaire, ce qui supprime le piège à la source ; la garde reste en défense.
 
+**Un worker aveugle à ses propres colonnes.** Le premier essai d'édition a fait échouer le test e2e : toute requête levait une erreur après la première modification. Le worker relisait les colonnes d'origine pour restaurer une ligne, or ces buffers sont *transférés* au main thread et ne lui appartiennent plus (longueur 0). Correctif : il garde les lignes d'origine qu'il remplace. Même test, un second défaut : le bouton « Modifier » et le bouton « Enregistrer » (`type="submit"`) occupaient le même emplacement, et le clic en cours soumettait le formulaire. Même cause, même remède que pour Stop (une `key` par bouton).
+
 ## Pistes d'évolution
 
+- Édition en ligne dans le tableau (statut, risque) et persistance côté serveur (React Query `useMutation`, mises à jour optimistes).
 - Découpage du bundle (`import()` dynamique de la carte et de l'assistant).
 - `SharedArrayBuffer` ou DuckDB-WASM au-delà du million de lignes.
 - WebSocket à la place de SSE pour un dialogue bidirectionnel, avec la même machine à états.

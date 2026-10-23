@@ -246,3 +246,25 @@ test('filtres, tri et fiche vivent dans l\'URL et suivent précédent/suivant', 
   await page.goForward();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
+
+test('modifier une exigence met à jour la table et survit au rechargement', async ({ page }) => {
+  const grid = page.getByRole('grid', { name: 'Exigences réglementaires' });
+  const first = grid.getByRole('row').nth(1);
+  const ref = (await first.getByRole('gridcell').first().textContent())!;
+  await first.click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('button', { name: 'Modifier' }).click();
+  await dialog.getByLabel('Intitulé').fill('Intitulé modifié en local');
+  await dialog.getByLabel('Statut').selectOption('non_conforme');
+  await dialog.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(dialog.getByRole('heading', { name: 'Intitulé modifié en local' })).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  const row = grid.getByRole('row').filter({ hasText: ref });
+  await expect(row).toContainText('Intitulé modifié en local', { timeout: 10_000 });
+  await expect(row).toContainText('Non conforme');
+
+  await page.reload();
+  await expect(grid).toBeVisible({ timeout: 15_000 });
+  await expect(grid.getByRole('row').filter({ hasText: ref })).toContainText('Intitulé modifié en local', { timeout: 10_000 });
+});
