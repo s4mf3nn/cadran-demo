@@ -1,6 +1,6 @@
 # Cadran
 
-Tableau de bord de pilotage de la conformité réglementaire : 150 000 exigences par pays, catégorie, statut, risque et échéance, avec un assistant IA en streaming. Projet de démonstration (données fictives, générées de façon déterministe).
+Tableau de bord de pilotage de la conformité réglementaire : de 150 000 à 1 000 000 d'exigences par pays, catégorie, statut, risque et échéance, avec un assistant IA en streaming. Projet de démonstration (données fictives, générées de façon déterministe).
 
 Ce qu'il met en avant :
 
@@ -43,7 +43,7 @@ React 19, TypeScript strict, Vite, Zustand, TanStack Query, TanStack Virtual, d3
 └──────────────────────────────┬──────────────────────────────────┘
                                │ postMessage (Uint32Array transféré)
 ┌──────────────────────────────▼──────────────────────────────────┐
-│  Web Worker : 150 000 exigences, filtre + tri + agrégats        │
+│  Web Worker : 150 k à 1 M exigences, filtre + tri + agrégats    │
 │  src/data/query.ts : fonctions pures, testables sans navigateur │
 └─────────────────────────────────────────────────────────────────┘
 
@@ -60,11 +60,13 @@ Les choix structurants :
 ## Performance
 
 - Filtre, tri et toutes les agrégations en **une seule passe** dans un **Web Worker**.
-- Le dataset n'est cloné vers le main thread qu'une fois ; ensuite, chaque requête ne renvoie qu'un `Uint32Array` d'index **transféré sans copie**.
-- Table **virtualisée** : une trentaine de lignes dans le DOM quel que soit le volume, ce qu'un test vérifie.
+- **Montée en charge en un clic** : le sélecteur flottant `150 k | 1 M` (en bas à droite) régénère le référentiel à 150 000 ou 1 000 000 d'exigences ; l'ancien reste affiché pendant la génération.
+- Le main thread ne reçoit jamais d'objets : le worker lui **transfère** le référentiel **en colonnes** (typed arrays, ~13 octets par exigence), puis chaque requête ne renvoie qu'un `Uint32Array` d'index. Les lignes sont reconstruites à la demande (`RowSet`) : seule la trentaine affichée par la table existe en mémoire.
+- Tri **par comptage** en O(n) (toutes les clés sont de faible cardinalité) : environ 20 ms à 1 M de lignes, contre environ 200 ms pour `sort` + `localeCompare` (mesuré sous Node).
+- Table **virtualisée** : une trentaine de lignes dans le DOM quel que soit le volume, ce qu'un test vérifie. Au-delà de 15 M px (1 M de lignes = 46 M px, plus que la hauteur maximale d'un élément dans Chrome ou Firefox), la hauteur défilable est plafonnée et le défilement mis à l'échelle (`src/hooks/useFixedVirtual.ts`) : la dernière ligne reste atteignable.
 - Saisie fluide grâce à `useDeferredValue` ; `keepPreviousData` évite le flash vide pendant les recalculs.
 - Animations (jauges, vagues, zoom de la carte) pilotées par `requestAnimationFrame` ; les vagues se redessinent sans re-rendu React et s'arrêtent hors écran.
-- **Diagnostic au profiler** : en dev, React 19 compare en profondeur les props modifiées pour sa piste « Components », ce qui coûtait environ 1 s par commit sur le tableau de 150 000 lignes. Marquer ce tableau comme valeur opaque (`Symbol.toStringTag`, en dev uniquement) a supprimé le coût.
+- **Diagnostic au profiler** : en dev, React 19 compare en profondeur les props modifiées pour sa piste « Components », ce qui coûtait environ 1 s par commit sur le tableau de 150 000 lignes. Le tableau de lignes a depuis laissé place à un accès paresseux (`RowSet`), qui supprime le problème à la source.
 
 ## Visualisation de données
 

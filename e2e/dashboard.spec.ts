@@ -32,6 +32,58 @@ test('la table reste virtualisée sur 150 000 lignes', async ({ page }) => {
   await expect(page.getByRole('row').last()).toBeVisible();
 });
 
+test('à chaque palier, la table contient exactement le nombre d’exigences demandé', async ({ page }) => {
+  test.setTimeout(90_000);
+  const scaler = page.getByRole('radiogroup', { name: 'Volume du référentiel' });
+  const small = scaler.getByRole('radio', { name: /^150\s000 exigences$/ });
+  const large = scaler.getByRole('radio', { name: /^1\s000\s000 exigences$/ });
+  const grid = page.getByRole('grid', { name: 'Exigences réglementaires' });
+  // « 1 000 000 » avec n'importe quel espace (fr-FR utilise l'espace fine insécable).
+  const fr = (n: number) => new RegExp(n.toLocaleString('en-US').replaceAll(',', '\\s'));
+
+  // Tri par référence croissante : la dernière ligne doit être REQ-<taille>.
+  await page.getByRole('button', { name: /^Référence$/ }).click();
+  await expect(page.getByRole('columnheader', { name: /Référence/ })).toHaveAttribute('aria-sort', 'ascending');
+
+  const expectRows = async (size: number) => {
+    await expect(scaler).toHaveAttribute('aria-busy', 'false', { timeout: 20_000 });
+    // En-tête de grille + une ligne ARIA par exigence.
+    await expect(grid).toHaveAttribute('aria-rowcount', String(size + 1), { timeout: 20_000 });
+    await expect(page.getByRole('banner')).toContainText(new RegExp(`${fr(size).source} exigences`));
+    await expect(page.getByRole('complementary', { name: 'Filtres' })).toContainText(new RegExp(`${fr(size).source} exigences correspondent`));
+    await expect(page.getByRole('region', { name: 'Exigences' })).toContainText(fr(size));
+
+    await grid.focus();
+    await page.keyboard.press('Home');
+    await expect(page.getByRole('row').nth(1)).toHaveAttribute('aria-rowindex', '2');
+    await expect(page.getByRole('row').nth(1)).toContainText('REQ-000001');
+    await page.keyboard.press('End');
+    const last = page.getByRole('row').last();
+    await expect(last).toHaveAttribute('aria-rowindex', String(size + 1));
+    await expect(last).toContainText(`REQ-${String(size).padStart(6, '0')}`);
+  };
+
+  await expect(small).toBeChecked();
+  await expectRows(150_000);
+  await large.click();
+  await expect(large).toBeChecked();
+  await expectRows(1_000_000);
+
+  // Un filtre s'applique au nouveau référentiel : la table suit le volume de la pilule de statut.
+  const pill = page.getByRole('complementary', { name: 'Filtres' }).getByRole('button', { name: /^Non conforme/ });
+  const nonConformes = Number((await pill.textContent())!.replace(/\D/g, ''));
+  await pill.click();
+  await expect(grid).toHaveAttribute('aria-rowcount', String(nonConformes + 1));
+  await pill.click();
+
+  // Retour au clavier : flèche gauche dans le groupe radio.
+  await large.focus();
+  // Radix déplace le focus de façon asynchrone et ne coche que si la flèche est encore enfoncée.
+  await page.keyboard.press('ArrowLeft', { delay: 50 });
+  await expect(small).toBeChecked();
+  await expectRows(150_000);
+});
+
 test("l'assistant affiche un état d'attente puis streame la réponse", async ({ page }) => {
   await page.getByRole('button', { name: 'Envoyer' }).click();
   await expect(page.getByRole('button', { name: /Arrêter/ })).toBeVisible();

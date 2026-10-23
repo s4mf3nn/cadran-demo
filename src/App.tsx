@@ -9,7 +9,8 @@ import { ShortcutsDialog } from './components/ShortcutsDialog';
 import { AppHeader } from './components/layout/AppHeader';
 import { RightPanel } from './components/layout/RightPanel';
 import { Sidebar } from './components/layout/Sidebar';
-import { DATASET_SIZE, useCadranData } from './hooks/useCadranData';
+import { useCadranData } from './hooks/useCadranData';
+import { DatasetScaler } from './components/DatasetScaler';
 import { useAssistant, SUGGESTIONS } from './hooks/useAssistant';
 import { useHotkeys } from './hooks/useHotkeys';
 import { useIsMobile } from './hooks/useIsMobile';
@@ -23,7 +24,7 @@ import { cn } from '@/lib/utils';
 const SKIP_LINK = 'sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-full focus:bg-foreground focus:px-5 focus:py-3 focus:text-body focus:font-medium focus:text-background';
 
 export default function App() {
-  const { rows, aggregates, timings, datasetSize, isLoading, isRefreshing, error } = useCadranData();
+  const { rows, aggregates, timings, datasetSize, requestedSize, isScaling, isLoading, isRefreshing, error } = useCadranData();
   const ui = useUi.getState;
   const isMobile = useIsMobile();
   const assistant = useAssistant(aggregates);
@@ -51,14 +52,14 @@ export default function App() {
       {/* RGAA 12.7 : lien d'évitement, premier élément tabulable, visible au focus. */}
       <a href={`#${MAIN_ID}`} className={SKIP_LINK}>Aller au contenu principal</a>
       {isMobile ? (
-        <MobileLayout rows={rows} aggregates={aggregates} isLoading={isLoading} isRefreshing={isRefreshing} assistant={assistant} />
+        <MobileLayout rows={rows} aggregates={aggregates} isLoading={isLoading} isRefreshing={isRefreshing} isScaling={isScaling} assistant={assistant} />
       ) : (
       <div className="flex h-screen gap-3.5 bg-background p-4 text-foreground">
         <Sidebar>
           <FilterPanel aggregates={aggregates} />
         </Sidebar>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-3.5">
+        <div className="relative flex min-w-0 flex-1 flex-col gap-3.5">
           <AppHeader rows={rows} datasetSize={datasetSize} timings={timings} isRefreshing={isRefreshing} />
 
           <main id={MAIN_ID} tabIndex={-1} className="relative flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto outline-none">
@@ -69,7 +70,7 @@ export default function App() {
             )}
             {isLoading || !aggregates ? (
               <div className="grid flex-1 place-items-center rounded-card border-2 border-card-border text-muted" aria-busy="true">
-                <p className="text-center" aria-live="polite">Génération de {DATASET_SIZE.toLocaleString('fr-FR')} exigences dans le worker…</p>
+                <p className="text-center" aria-live="polite">Génération de {requestedSize.toLocaleString('fr-FR')} exigences dans le worker…</p>
               </div>
             ) : (
               <>
@@ -81,6 +82,9 @@ export default function App() {
               </>
             )}
           </main>
+
+          {/* En bas à droite du tableau de bord, sans recouvrir la saisie de l'assistant docké. */}
+          <DatasetScaler isScaling={isScaling} className="absolute right-4 bottom-4 z-30" />
         </div>
 
         <RightPanel>

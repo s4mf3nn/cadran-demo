@@ -15,6 +15,17 @@ test('la barre flottante ouvre les tiroirs Filtres et Assistant', async ({ page 
   await expect(page.getByRole('dialog', { name: /Assistant/ })).toBeVisible();
 });
 
+test('à chaque palier, la liste mobile va jusqu’à la dernière exigence', async ({ page }) => {
+  const large = page.getByRole('radio', { name: /^1\s000\s000 exigences$/ });
+  const list = page.getByRole('list', { name: 'Exigences réglementaires' });
+  for (const size of [150_000, 1_000_000]) {
+    if (size > 150_000) await large.click();
+    await expect(list.getByRole('listitem').first()).toHaveAttribute('aria-setsize', String(size), { timeout: 20_000 });
+    await list.evaluate((ul) => { const el = ul.parentElement!; el.scrollTop = el.scrollHeight; });
+    await expect(list.getByRole('listitem').last()).toHaveAttribute('aria-posinset', String(size));
+  }
+});
+
 test('aucune violation axe et aucune touche de raccourci affichée', async ({ page }) => {
   await expect(page.locator('kbd:visible')).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);

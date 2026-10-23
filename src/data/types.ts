@@ -110,6 +110,15 @@ export interface Requirement {
   dueAt: number;
 }
 
+/**
+ * Lignes affichées, lues à la demande : à 1 M d'exigences, on ne matérialise que celles qu'on regarde.
+ * Un `Requirement[]` convient aussi (tests, petites listes).
+ */
+export interface RowSet {
+  readonly length: number;
+  at(index: number): Requirement | undefined;
+}
+
 export interface Filters {
   search: string;
   countries: Country[];

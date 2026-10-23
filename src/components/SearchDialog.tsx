@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Cancel01Icon, Search01Icon } from '@hugeicons/core-free-icons';
-import { STATUS_LABEL, type Requirement } from '../data/types';
+import { STATUS_LABEL, type Requirement, type RowSet } from '../data/types';
 import { useFilters } from '../store/filters';
 import { useUi } from '../store/ui';
 import { StatusDot } from './StatusTag';
@@ -11,7 +11,7 @@ const MAX_RESULTS = 8;
 const nf = new Intl.NumberFormat('fr-FR');
 
 interface Props {
-  rows: Requirement[];
+  rows: RowSet;
   total?: number;
 }
 
@@ -26,7 +26,7 @@ export function SearchDialog({ rows, total }: Props) {
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const results = search.trim() ? rows.slice(0, MAX_RESULTS) : [];
+  const results = search.trim() ? Array.from({ length: Math.min(rows.length, MAX_RESULTS) }, (_, i) => rows.at(i)!) : [];
   const pick = (r: Requirement) => {
     select(r.id);
     openRow(r);
