@@ -17,5 +17,5 @@
     "paths": { "@/*": ["./src/*"] },
     "types": ["vite/client", "node", "@testing-library/jest-dom/vitest"]
   },
-  "include": ["src", "e2e", "api", "vite.config.ts", "playwright.config.ts", "server"]
+  "include": ["src", ".storybook", "e2e", "api", "vite.config.ts", "playwright.config.ts", "server"]
 }
