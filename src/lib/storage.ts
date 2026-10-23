@@ -19,3 +19,22 @@ export function writeFlag(key: string, [on, off]: FlagValues, value: boolean) {
     // Stockage indisponible (navigation privée, quota) : rien à faire.
   }
 }
+
+/** Lecture JSON protégée : valeur absente, illisible ou stockage indisponible → `undefined`. */
+export function readJson(key: string): unknown {
+  try {
+    const v = localStorage.getItem(key);
+    return v === null ? undefined : JSON.parse(v);
+  } catch {
+    return undefined;
+  }
+}
+
+/** Écriture JSON protégée : sans persistance possible, la valeur vaut pour la session. */
+export function writeJson(key: string, value: unknown) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Stockage indisponible (navigation privée, quota) : rien à faire.
+  }
+}
