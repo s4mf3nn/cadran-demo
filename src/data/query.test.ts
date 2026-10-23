@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { generateRequirements } from './generate';
-import { runQuery } from './query';
-import type { Filters, Sort } from './types';
+import { generateColumns, generateRequirements, rowAt } from './generate';
+import { compare, runQuery, sortIds } from './query';
+import type { Filters, Sort, SortKey } from './types';
 
 const data = generateRequirements(5_000, 1);
 const noFilter: Filters = { search: '', countries: [], categories: [], statuses: [], regulations: [], minRisk: 1, dueWithin: null };
@@ -11,6 +11,28 @@ const NOW = Date.UTC(2026, 9, 1);
 describe('generateRequirements', () => {
   it('est déterministe pour une même seed', () => {
     expect(generateRequirements(100, 7)).toEqual(generateRequirements(100, 7));
+  });
+
+  it('reconstruit chaque ligne à l’identique depuis les colonnes', () => {
+    const cols = generateColumns(5_000, 1);
+    expect(Array.from({ length: 5_000 }, (_, i) => rowAt(cols, i))).toEqual(data);
+  });
+});
+
+describe('sortIds', () => {
+  const keys: SortKey[] = ['ref', 'country', 'category', 'status', 'risk', 'dueAt'];
+  it.each(keys.flatMap((key) => (['asc', 'desc'] as const).map((dir) => ({ key, dir }))))(
+    'trie par comptage comme le comparateur ($key $dir)',
+    (sort) => {
+      const expected = Uint32Array.from(data.slice().sort((a, b) => compare(a, b, sort)), (r) => r.id);
+      expect(sortIds(data, sort)).toEqual(expected);
+    },
+  );
+
+  it('retombe sur le comparateur si les échéances ne sont pas au jour près', () => {
+    const odd = data.slice(0, 200).map((r, i) => ({ ...r, dueAt: r.dueAt + (i % 7) * 3_600_000 }));
+    const sort: Sort = { key: 'dueAt', dir: 'desc' };
+    expect(sortIds(odd, sort)).toEqual(Uint32Array.from(odd.slice().sort((a, b) => compare(a, b, sort)), (r) => r.id));
   });
 });
 
@@ -98,6 +120,21 @@ describe('runQuery', () => {
     const { indices } = runQuery(data, noFilter, { key: 'dueAt', dir: 'desc' }, NOW);
     for (let i = 1; i < indices.length; i++) {
       expect(data[indices[i - 1]!]!.dueAt).toBeGreaterThanOrEqual(data[indices[i]!]!.dueAt);
+    }
+  });
+
+  it('recherche aussi dans les intitulés, sans casse', () => {
+    const { indices } = runQuery(data, { ...noFilter, search: 'BATTERIE' }, byRef, NOW);
+    expect(indices.length).toBe(data.filter((r) => r.title.toLowerCase().includes('batterie')).length);
+    expect(indices.length).toBeGreaterThan(0);
+  });
+
+  it('trie 1 000 000 de lignes en un temps raisonnable', () => {
+    const big = generateRequirements(1_000_000, 3);
+    for (const key of ['country', 'dueAt'] as const) {
+      const t0 = performance.now();
+      runQuery(big, noFilter, { key, dir: 'desc' }, NOW);
+      expect(performance.now() - t0).toBeLessThan(2_000);
     }
   });
 

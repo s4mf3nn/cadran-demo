@@ -2,7 +2,7 @@ import { Download04Icon, Github01Icon, SparklesIcon } from '@hugeicons/core-free
 import { exportCsv } from '@/lib/exportCsv';
 import { focusIn } from '@/lib/focus';
 import { useUi } from '@/store/ui';
-import type { Requirement } from '@/data/types';
+import type { RowSet } from '@/data/types';
 import { Icon } from '@/components/ui/icon';
 import { nf } from '../viz/format';
 import { RIGHT_PANEL_ID } from './RightPanel';
@@ -23,7 +23,7 @@ export function TimingsText({ datasetSize, timings, isRefreshing }: { datasetSiz
   );
 }
 
-export function AppHeader({ rows, datasetSize, timings, isRefreshing }: { rows: Requirement[]; datasetSize?: number; timings: Timings; isRefreshing: boolean }) {
+export function AppHeader({ rows, datasetSize, timings, isRefreshing }: { rows: RowSet; datasetSize?: number; timings: Timings; isRefreshing: boolean }) {
   const rightOpen = useUi((s) => s.rightOpen);
   const setPanel = useUi((s) => s.setPanel);
 

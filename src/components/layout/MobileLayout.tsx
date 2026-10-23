@@ -1,10 +1,11 @@
 import { AiMagicIcon, FilterHorizontalIcon, Search01Icon } from '@hugeicons/core-free-icons';
-import type { Aggregates, Requirement } from '@/data/types';
+import type { Aggregates, RowSet } from '@/data/types';
 import type { AssistantApi } from '@/hooks/useAssistant';
 import { useUi } from '@/store/ui';
 import { AssistantPanel } from '../AssistantPanel';
 import { FilterPanel } from '../FilterPanel';
 import { GaugeRow, KeyIndicators, TopCountries, WaveGrid } from '../Dashboard';
+import { DatasetScaler } from '../DatasetScaler';
 import { RequirementsList } from '../RequirementsList';
 import { WorldMap } from '../viz/WorldMap';
 import { Brand, SidebarBody } from './Sidebar';
@@ -16,15 +17,16 @@ import { MAIN_ID } from '@/lib/focus';
 import { cn } from '@/lib/utils';
 
 interface Props {
-  rows: Requirement[];
+  rows: RowSet;
   aggregates?: Aggregates;
   isLoading: boolean;
   isRefreshing: boolean;
+  isScaling: boolean;
   assistant: AssistantApi;
 }
 
 /** Mobile (< 768 px) : en-tête de 56 px, contenu empilé, panneaux en tiroirs ouverts depuis une barre flottante. */
-export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assistant }: Props) {
+export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, isScaling, assistant }: Props) {
   const leftDrawer = useUi((s) => s.leftDrawer);
   const rightDrawer = useUi((s) => s.rightDrawer);
   const setDrawer = useUi((s) => s.setDrawer);
@@ -58,6 +60,9 @@ export function MobileLayout({ rows, aggregates, isLoading, isRefreshing, assist
           </>
         )}
       </main>
+
+      {/* Au-dessus de la barre des panneaux. */}
+      <DatasetScaler isScaling={isScaling} className="fixed right-4 bottom-24 z-40" />
 
       <nav aria-label="Panneaux" className="fixed inset-x-4 bottom-4 z-40 flex gap-2 rounded-full border-2 border-card-border bg-background p-1.5">
         <Button type="button" variant="ghost" className="h-11 flex-1 rounded-full bg-surface hover:bg-track" aria-haspopup="dialog" onClick={() => setDrawer('left', true)}>

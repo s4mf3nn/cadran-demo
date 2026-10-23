@@ -1,56 +1,74 @@
 import { useDeferredValue, useMemo } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { rowAt } from '../data/generate';
+import type { RowSet } from '../data/types';
 import { dataWorker } from '../lib/dataWorker';
+import { useDatasetSize } from '../store/dataset';
 import { useFilters } from '../store/filters';
 
-export const DATASET_SIZE = 150_000;
+const SEED = 42;
+const EMPTY: RowSet = [];
 
 export function useDataset() {
+  const size = useDatasetSize((s) => s.size);
   return useQuery({
-    queryKey: ['dataset', DATASET_SIZE],
-    queryFn: () => dataWorker().call<'init'>({ type: 'init', size: DATASET_SIZE, seed: 42 }),
+    queryKey: ['dataset', size],
+    queryFn: () => dataWorker().call<'init'>({ type: 'init', size, seed: SEED }),
     staleTime: Infinity,
+    // Une seule taille en mémoire : chaque changement de palier régénère réellement le référentiel.
+    gcTime: 0,
+    // L'ancien référentiel reste affiché pendant la génération du suivant.
+    placeholderData: keepPreviousData,
   });
 }
 
 export function useCadranData() {
+  const size = useDatasetSize((s) => s.size);
   const dataset = useDataset();
   const filters = useFilters((s) => s.filters);
   const sort = useFilters((s) => s.sort);
+  const columns = dataset.isPlaceholderData ? undefined : dataset.data?.columns;
 
   // La saisie reste fluide : React traite la recherche en priorité basse.
   const deferredFilters = useDeferredValue(filters);
   const isStale = deferredFilters !== filters;
 
   const query = useQuery({
-    queryKey: ['query', deferredFilters, sort],
-    queryFn: () => dataWorker().call<'query'>({ type: 'query', filters: deferredFilters, sort }),
-    enabled: dataset.isSuccess,
+    queryKey: ['query', size, deferredFilters, sort],
+    queryFn: async () => ({
+      ...(await dataWorker().call<'query'>({ type: 'query', size, seed: SEED, filters: deferredFilters, sort })),
+      // Les index ne valent que pour les colonnes du référentiel interrogé : on les garde ensemble.
+      columns: columns!,
+    }),
+    enabled: !!columns,
     // On garde le résultat précédent affiché pendant le recalcul (pas de flash vide).
     placeholderData: keepPreviousData,
   });
 
-  const rows = useMemo(() => {
-    const data = dataset.data?.data;
-    const indices = query.data?.result.indices;
-    if (!data || !indices) return [];
-    const rows = Array.from(indices, (i) => data[i]!);
-    // En dev, React 19 diffe en profondeur les props changées de chaque composant re-rendu
-    // (pistes « Components » des DevTools) et sa limite de 100 éléments ne s'applique pas quand
-    // les éléments diffèrent : un tableau dont les lignes se décalent (seuil de risque) coûte
-    // ~1 s par commit. Un tag de type propre le fait traiter comme une valeur opaque.
-    if (import.meta.env.DEV) Object.defineProperty(rows, Symbol.toStringTag, { value: 'Requirements' });
-    return rows;
-  }, [dataset.data, query.data]);
+  const rows = useMemo<RowSet>(() => {
+    if (!query.data) return EMPTY;
+    const { columns, result: { indices } } = query.data;
+    // Lignes reconstruites à la demande : le tableau virtualisé n'en lit qu'une trentaine par rendu.
+    return {
+      length: indices.length,
+      at: (i) => (i >= 0 && i < indices.length ? rowAt(columns, indices[i]!) : undefined),
+    };
+  }, [query.data]);
+
+  /** Taille réelle du référentiel affiché (pas le palier demandé). */
+  const datasetSize = query.data?.columns.status.length;
+  const isScaling = datasetSize !== undefined && datasetSize !== size;
 
   return {
     rows,
     aggregates: query.data?.result.aggregates,
     timings: { init: dataset.data?.ms, query: query.data?.ms },
-    /** Taille réelle du référentiel chargé (pas la constante demandée). */
-    datasetSize: dataset.data?.data.length,
-    isLoading: dataset.isPending || (query.isPending && query.fetchStatus !== 'idle'),
-    isRefreshing: isStale || query.isPlaceholderData || query.isFetching,
+    datasetSize,
+    /** Palier demandé, en cours de génération tant que `isScaling`. */
+    requestedSize: size,
+    isScaling,
+    isLoading: !query.data && !query.error && !dataset.error,
+    isRefreshing: isStale || isScaling || query.isPlaceholderData || query.isFetching,
     error: dataset.error ?? query.error,
   };
 }

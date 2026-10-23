@@ -1,10 +1,10 @@
 import { memo, useRef, useState, type KeyboardEvent } from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
 import { ArrowDown01Icon, ArrowUp01Icon, Layers01Icon } from '@hugeicons/core-free-icons';
 import { Icon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
 import { filterSummary, SORT_LABEL } from '@/lib/labels';
-import type { Aggregates, Requirement, SortKey } from '../data/types';
+import type { Aggregates, RowSet, SortKey } from '../data/types';
+import { useFixedVirtual } from '../hooks/useFixedVirtual';
 import { useFilters } from '../store/filters';
 import { RiskMeter } from './RiskMeter';
 import { StatusTag } from './StatusTag';
@@ -31,11 +31,11 @@ const dateFmt = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short' });
 const nf = new Intl.NumberFormat('fr-FR');
 
 /**
- * Table virtualisée : quelle que soit la taille du résultat (150 000 lignes),
+ * Table virtualisée : quelle que soit la taille du résultat (jusqu'à 1 000 000 de lignes),
  * seules ~30 lignes existent dans le DOM. Navigation clavier par ligne
  * (flèches haut/bas, Page Up/Down, Home/End, Espace, Entrée) avec la sémantique ARIA grid.
  */
-export const RequirementsTable = memo(function RequirementsTable({ rows, aggregates }: { rows: Requirement[]; aggregates?: Aggregates }) {
+export const RequirementsTable = memo(function RequirementsTable({ rows, aggregates }: { rows: RowSet; aggregates?: Aggregates }) {
   const parentRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const sort = useFilters((s) => s.sort);
@@ -45,13 +45,13 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
   const open = useFilters((s) => s.open);
   const filters = useFilters((s) => s.filters);
 
-  const virtualizer = useVirtualizer({
+  const virtualizer = useFixedVirtual({
     count: rows.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => ROW_HEIGHT,
+    scrollRef: parentRef,
+    itemHeight: ROW_HEIGHT,
     overscan: 12,
     // Les lignes commencent sous l'en-tête collant : sans cette marge, la ligne active peut s'y cacher.
-    scrollMargin: HEADER_HEIGHT,
+    offsetTop: HEADER_HEIGHT,
   });
 
   const activeIndex = Math.min(active, Math.max(rows.length - 1, 0));
@@ -59,14 +59,14 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
   const move = (to: number) => {
     const next = Math.max(0, Math.min(rows.length - 1, to));
     setActive(next);
-    virtualizer.scrollToIndex(next, { align: 'auto' });
+    virtualizer.scrollToIndex(next);
   };
 
   const onKeyDown = (e: KeyboardEvent) => {
     // Les touches de la grille ne doivent pas se déclencher depuis les boutons d'en-tête (Espace/Entrée = tri).
     if (e.target !== e.currentTarget) return;
     const page = Math.floor(((parentRef.current?.clientHeight ?? 400) - HEADER_HEIGHT) / ROW_HEIGHT);
-    const row = rows[activeIndex];
+    const row = rows.at(activeIndex);
     const keys: Record<string, () => void> = {
       ArrowDown: () => move(activeIndex + 1),
       ArrowUp: () => move(activeIndex - 1),
@@ -109,7 +109,7 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
         aria-label="Exigences réglementaires"
         // En-tête + lignes ; sans résultat, une ligne porte le message.
         aria-rowcount={Math.max(rows.length, 1) + 1}
-        aria-activedescendant={rows.length ? `row-${rows[activeIndex]?.id}` : undefined}
+        aria-activedescendant={rows.length ? `row-${rows.at(activeIndex)?.id}` : undefined}
         tabIndex={0}
         onKeyDown={onKeyDown}
         ref={parentRef}
@@ -144,13 +144,13 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
             <div role="gridcell" aria-colspan={COLUMNS.length + 1} className="p-6 text-center text-muted">Aucune exigence ne correspond aux filtres.</div>
           </div>
         ) : (
-          <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }} className={MIN_WIDTH}>
-            {virtualizer.getVirtualItems().map((v) => {
-              const r = rows[v.index]!;
+          <div style={{ height: virtualizer.totalSize, position: 'relative' }} className={MIN_WIDTH}>
+            {virtualizer.items.map((v) => {
+              const r = rows.at(v.index)!;
               const isActive = v.index === activeIndex;
               const isSelected = r.id === selectedId;
               // Pas de séparateur au-dessus de la première ligne, ni autour de la ligne sélectionnée.
-              const noSeparator = v.index === 0 || isSelected || rows[v.index - 1]?.id === selectedId;
+              const noSeparator = v.index === 0 || isSelected || rows.at(v.index - 1)?.id === selectedId;
               return (
                 <div
                   key={r.id}
@@ -165,7 +165,7 @@ export const RequirementsTable = memo(function RequirementsTable({ rows, aggrega
                     isSelected ? 'bg-surface' : 'hover:bg-surface/60',
                     isActive && 'group-focus-visible/grid:shadow-[inset_0_0_0_2px_var(--foreground)]',
                   )}
-                  style={{ gridTemplateColumns: GRID, height: ROW_HEIGHT, transform: `translateY(${v.start - HEADER_HEIGHT}px)` }}
+                  style={{ gridTemplateColumns: GRID, height: ROW_HEIGHT, transform: `translateY(${v.top}px)` }}
                 >
                   <div role="gridcell" className={cn(CELL, 'text-muted-soft tabular-nums')}><span className="truncate">{r.ref}</span></div>
                   <div role="gridcell" className={CELL}><span className="truncate">{r.country}</span></div>

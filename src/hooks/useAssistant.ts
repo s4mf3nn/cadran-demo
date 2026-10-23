@@ -17,7 +17,7 @@ export interface Turn {
   error: string | null;
 }
 
-/** Flux de l'assistant + envoi d'une question avec le contexte de la sélection courante (agrégats, pas les 150 000 lignes). */
+/** Flux de l'assistant + envoi d'une question avec le contexte de la sélection courante (agrégats, pas les centaines de milliers de lignes). */
 export function useAssistant(aggregates?: Aggregates) {
   const stream = useAssistantStream();
   const { ask, clear, status, question: lastQuestion, text, error } = stream;

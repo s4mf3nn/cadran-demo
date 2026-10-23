@@ -1,7 +1,7 @@
 import { memo, useRef } from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { useFixedVirtual } from '../hooks/useFixedVirtual';
 import { useFilters } from '../store/filters';
-import type { Requirement } from '../data/types';
+import type { RowSet } from '../data/types';
 import { RiskMeter } from './RiskMeter';
 import { StatusTag } from './StatusTag';
 import { cn } from '@/lib/utils';
@@ -10,12 +10,12 @@ const ITEM_HEIGHT = 72;
 const nf = new Intl.NumberFormat('fr-FR');
 
 /** Version mobile de la table : une liste virtualisée (référence, statut, intitulé). */
-export const RequirementsList = memo(function RequirementsList({ rows }: { rows: Requirement[] }) {
+export const RequirementsList = memo(function RequirementsList({ rows }: { rows: RowSet }) {
   const parentRef = useRef<HTMLDivElement>(null);
   const selectedId = useFilters((s) => s.selectedId);
   const select = useFilters((s) => s.select);
   const open = useFilters((s) => s.open);
-  const virtualizer = useVirtualizer({ count: rows.length, getScrollElement: () => parentRef.current, estimateSize: () => ITEM_HEIGHT, overscan: 8 });
+  const virtualizer = useFixedVirtual({ count: rows.length, scrollRef: parentRef, itemHeight: ITEM_HEIGHT, overscan: 8 });
 
   return (
     <section aria-label="Exigences" className="flex h-[32rem] flex-col overflow-hidden rounded-card border-2 border-card-border bg-background">
@@ -26,17 +26,17 @@ export const RequirementsList = memo(function RequirementsList({ rows }: { rows:
         {rows.length === 0 ? (
           <p className="p-6 text-center text-muted">Aucune exigence ne correspond aux filtres.</p>
         ) : (
-          <ul role="list" aria-label="Exigences réglementaires" style={{ height: virtualizer.getTotalSize() }} className="relative">
-            {virtualizer.getVirtualItems().map((v) => {
-              const r = rows[v.index]!;
+          <ul role="list" aria-label="Exigences réglementaires" style={{ height: virtualizer.totalSize }} className="relative">
+            {virtualizer.items.map((v) => {
+              const r = rows.at(v.index)!;
               const isSelected = r.id === selectedId;
               return (
                 <li
                   key={r.id}
                   aria-setsize={rows.length}
                   aria-posinset={v.index + 1}
-                  className={cn('absolute left-0 w-full border-t', v.index === 0 || isSelected || rows[v.index - 1]?.id === selectedId ? 'border-transparent' : 'border-line')}
-                  style={{ height: ITEM_HEIGHT, transform: `translateY(${v.start}px)` }}
+                  className={cn('absolute left-0 w-full border-t', v.index === 0 || isSelected || rows.at(v.index - 1)?.id === selectedId ? 'border-transparent' : 'border-line')}
+                  style={{ height: ITEM_HEIGHT, transform: `translateY(${v.top}px)` }}
                 >
                   <button
                     type="button"
